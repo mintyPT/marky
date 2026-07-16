@@ -9,8 +9,14 @@ Use Node 20 or newer.
 ```bash
 npm install
 npm test
+npx playwright install chromium
+npm run test:integration
 npm run build
 ```
+
+`npm test` runs the fast unit suite. `npm run test:integration` launches Chromium and writes real
+PDFs through the library and CLI. If Chromium is missing, Marky reports `MARKY_BROWSER_MISSING`; run
+`npx playwright install chromium` and retry.
 
 ## CLI
 
@@ -66,6 +72,9 @@ npm run dev -- build --config ./marky.config.json
 
 `build` discovers configured `inputs`, writes PDFs under `outDir`, preserves paths relative to
 `rootDir`, and exits non-zero if any file fails.
+
+Use `npm run pack:verify` before publishing to confirm the package contains the CLI, library build,
+type declarations, README, and license.
 
 ## Library
 
@@ -133,6 +142,9 @@ For file renders, relative Markdown assets such as images, links, and CSS resolv
 file directory. For raw Markdown strings, pass a document `baseUrl` when relative assets are used.
 Local relative assets are constrained to that base. Remote assets load when `network` is `allow` and
 are blocked when `network` is `block`.
+
+The default render policy allows network access because many documents reference remote images,
+fonts, or styles. Use `network: "block"` for deterministic local builds.
 
 Supported v1 render options:
 

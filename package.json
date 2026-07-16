@@ -39,10 +39,12 @@
     "build": "tsup",
     "check": "tsc --noEmit",
     "dev": "tsx src/cli/index.ts",
-    "test": "vitest run",
+    "test": "vitest run test/config.test.ts test/document.test.ts test/errors.test.ts test/options.test.ts",
+    "test:integration": "vitest run test/index.test.ts test/cli.test.ts test/build.test.ts",
+    "test:all": "npm test && npm run test:integration",
     "pack:dry": "npm run build && npm pack --dry-run --cache .npm-cache",
     "pack:verify": "npm run build && mkdir -p .tmp && npm pack --dry-run --json --cache .npm-cache > .tmp/npm-pack.json && node scripts/verify-package.mjs .tmp/npm-pack.json",
-    "release:check": "npm run check && npm test && npm run pack:verify"
+    "release:check": "npm run check && npm run test:all && npm run pack:verify"
   },
   "dependencies": {
     "commander": "^12.1.0",

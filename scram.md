@@ -236,7 +236,7 @@ For file input, resolve relative Markdown assets from the Markdown file director
 ---
 
 ## MARKY-008 · Document and verify the public lib CLI contract
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-007]
 tags: [marky-docs-contract]
 
@@ -263,3 +263,5 @@ Update documentation to cover `marky render`, `marky build`, `renderMarkdownToPd
 
 ### History
 - created · 2026-07-16T21:27:15Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:26:21Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:28:44Z · mauro.goncalo@gmail.com
