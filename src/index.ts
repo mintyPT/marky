@@ -20,6 +20,7 @@ export interface RenderMarkdownToPdfOptions {
   pdf?: Partial<PdfOptions>;
   network?: NetworkPolicy;
   waitUntil?: PageReadyState;
+  waitForFonts?: boolean;
   timeoutMs?: number;
   config?: RenderOptionsInput;
   configPath?: string;
@@ -30,6 +31,20 @@ export interface RenderMarkdownToPdfResult {
   outputPath: string;
 }
 
+export type MarkyErrorCode = "MARKY_BROWSER_MISSING" | "MARKY_RENDER_FAILED";
+
+export class MarkyRenderError extends Error {
+  readonly code: MarkyErrorCode;
+  readonly cause: unknown;
+
+  constructor(code: MarkyErrorCode, message: string, options: { cause?: unknown } = {}) {
+    super(message);
+    this.name = "MarkyRenderError";
+    this.code = code;
+    this.cause = options.cause;
+  }
+}
+
 export interface RenderedMarkdownDocument {
   html: string;
   title?: string;
@@ -38,11 +53,21 @@ export interface RenderedMarkdownDocument {
 }
 
 export type RawHtmlMode = "sanitize" | "escape" | "allow";
-export type NetworkPolicy = "offline" | "allow";
+export type NetworkPolicy = "allow" | "block";
 export type PageReadyState = "load" | "domcontentloaded" | "networkidle";
+
+export interface PdfMargin {
+  top?: string;
+  right?: string;
+  bottom?: string;
+  left?: string;
+}
 
 export interface PdfOptions {
   format: "A4" | "Letter" | "Legal";
+  margin?: PdfMargin;
+  landscape: boolean;
+  scale: number;
   printBackground: boolean;
 }
 
@@ -55,6 +80,7 @@ export interface RenderOptionsInput {
   pdf?: Partial<PdfOptions>;
   network?: NetworkPolicy;
   waitUntil?: PageReadyState;
+  waitForFonts?: boolean;
   timeoutMs?: number;
 }
 
@@ -76,6 +102,7 @@ export interface ResolvedRenderOptions {
   pdf: PdfOptions;
   network: NetworkPolicy;
   waitUntil: PageReadyState;
+  waitForFonts: boolean;
   timeoutMs: number;
 }
 
@@ -90,10 +117,13 @@ const defaultRenderOptions: Omit<ResolvedRenderOptions, "inputPath" | "outputPat
   css: [],
   pdf: {
     format: "A4",
+    landscape: false,
+    scale: 1,
     printBackground: true,
   },
-  network: "offline",
-  waitUntil: "networkidle",
+  network: "allow",
+  waitUntil: "load",
+  waitForFonts: true,
   timeoutMs: 30_000,
 };
 
@@ -121,26 +151,52 @@ export async function renderMarkdownToPdf(
 
   await mkdir(dirname(resolvedOptions.outputPath), { recursive: true });
 
-  const browser = await chromium.launch();
+  let browser;
   try {
+    browser = await chromium.launch();
     const page = await browser.newPage();
-    if (resolvedOptions.network === "offline") {
+    if (resolvedOptions.network === "block") {
       await page.route(/^https?:\/\//, (route) => route.abort());
     }
     await page.setContent(html, { waitUntil: resolvedOptions.waitUntil, timeout: resolvedOptions.timeoutMs });
+    if (resolvedOptions.waitForFonts) {
+      await page.evaluate("document.fonts.ready");
+    }
     await page.pdf({
       format: resolvedOptions.pdf.format,
+      margin: resolvedOptions.pdf.margin,
+      landscape: resolvedOptions.pdf.landscape,
+      scale: resolvedOptions.pdf.scale,
       path: resolvedOptions.outputPath,
       printBackground: resolvedOptions.pdf.printBackground,
     });
+  } catch (error) {
+    throw normalizeRenderError(error);
   } finally {
-    await browser.close();
+    await browser?.close();
   }
 
   return {
     inputPath: resolvedInputPath,
     outputPath: resolvedOptions.outputPath,
   };
+}
+
+export function normalizeRenderError(error: unknown): MarkyRenderError {
+  if (error instanceof MarkyRenderError) {
+    return error;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  if (/Executable doesn't exist|browser.*install|playwright install/i.test(message)) {
+    return new MarkyRenderError(
+      "MARKY_BROWSER_MISSING",
+      "Chromium is not installed for Playwright. Run `npx playwright install chromium` and try again.",
+      { cause: error },
+    );
+  }
+
+  return new MarkyRenderError("MARKY_RENDER_FAILED", `Failed to render PDF: ${message}`, { cause: error });
 }
 
 export function resolveRenderOptions(input: ResolveRenderOptionsInput): ResolvedRenderOptions {
@@ -162,10 +218,14 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
     ],
     pdf: {
       format: merged.pdf?.format ?? defaultRenderOptions.pdf.format,
+      margin: merged.pdf?.margin,
+      landscape: merged.pdf?.landscape ?? defaultRenderOptions.pdf.landscape,
+      scale: merged.pdf?.scale ?? defaultRenderOptions.pdf.scale,
       printBackground: merged.pdf?.printBackground ?? defaultRenderOptions.pdf.printBackground,
     },
     network: merged.network ?? defaultRenderOptions.network,
     waitUntil: merged.waitUntil ?? defaultRenderOptions.waitUntil,
+    waitForFonts: merged.waitForFonts ?? defaultRenderOptions.waitForFonts,
     timeoutMs: merged.timeoutMs ?? defaultRenderOptions.timeoutMs,
   };
 }
@@ -188,17 +248,18 @@ function mergeRenderOptions(...inputs: Array<RenderOptionsInput | undefined>): R
 }
 
 function frontmatterToRenderOptions(frontmatter: Record<string, unknown>): RenderOptionsInput {
-  return {
+  return omitUndefined({
     outputPath: readString(frontmatter.outputPath),
     force: readBoolean(frontmatter.force),
     rawHtml: readEnum(frontmatter.rawHtml, ["sanitize", "escape", "allow"]),
     theme: readString(frontmatter.theme),
     css: readStringArray(frontmatter.css),
     pdf: readPdfOptions(frontmatter.pdf),
-    network: readEnum(frontmatter.network, ["offline", "allow"]),
+    network: readEnum(frontmatter.network, ["allow", "block"]),
     waitUntil: readEnum(frontmatter.waitUntil, ["load", "domcontentloaded", "networkidle"]),
+    waitForFonts: readBoolean(frontmatter.waitForFonts),
     timeoutMs: readNumber(frontmatter.timeoutMs),
-  };
+  });
 }
 
 function readString(value: unknown): string | undefined {
@@ -235,10 +296,40 @@ function readPdfOptions(value: unknown): Partial<PdfOptions> | undefined {
   }
 
   const pdf = value as Record<string, unknown>;
-  return {
+  return omitUndefined({
     format: readEnum(pdf.format, ["A4", "Letter", "Legal"]),
+    margin: readPdfMargin(pdf.margin),
+    landscape: readBoolean(pdf.landscape),
+    scale: readNumber(pdf.scale),
     printBackground: readBoolean(pdf.printBackground),
+  });
+}
+
+function readPdfMargin(value: unknown): PdfMargin | undefined {
+  if (typeof value === "string") {
+    return {
+      top: value,
+      right: value,
+      bottom: value,
+      left: value,
+    };
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const margin = value as Record<string, unknown>;
+  return {
+    top: readString(margin.top),
+    right: readString(margin.right),
+    bottom: readString(margin.bottom),
+    left: readString(margin.left),
   };
+}
+
+function omitUndefined<Value extends Record<string, unknown>>(value: Value): Value {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as Value;
 }
 
 function resolvePaths(paths: string[], basePath: string): string[] {

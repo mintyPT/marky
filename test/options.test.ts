@@ -9,7 +9,7 @@ describe("resolveRenderOptions", () => {
         theme: "config-theme",
         rawHtml: "sanitize",
         force: false,
-        pdf: { format: "Letter", printBackground: false },
+        pdf: { format: "Letter", printBackground: false, scale: 0.9 },
       },
       frontmatter: {
         theme: "frontmatter-theme",
@@ -21,7 +21,11 @@ describe("resolveRenderOptions", () => {
         theme: "explicit-theme",
         rawHtml: "allow",
         force: true,
-        pdf: { printBackground: true },
+        pdf: {
+          printBackground: true,
+          landscape: true,
+          margin: { top: "12mm", right: "10mm", bottom: "12mm", left: "10mm" },
+        },
       },
     });
 
@@ -30,8 +34,14 @@ describe("resolveRenderOptions", () => {
     expect(options.force).toBe(true);
     expect(options.pdf).toEqual({
       format: "Legal",
+      landscape: true,
+      margin: { top: "12mm", right: "10mm", bottom: "12mm", left: "10mm" },
       printBackground: true,
+      scale: 0.9,
     });
+    expect(options.network).toBe("allow");
+    expect(options.waitUntil).toBe("load");
+    expect(options.waitForFonts).toBe(true);
     expect(options.timeoutMs).toBe(30_000);
   });
 
@@ -52,5 +62,23 @@ describe("resolveRenderOptions", () => {
       "/project/docs/report.css",
       "/shared/print.css",
     ]);
+  });
+
+  it("does not let absent frontmatter keys erase config values", () => {
+    const options = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      config: {
+        rawHtml: "allow",
+        network: "block",
+        waitUntil: "networkidle",
+        waitForFonts: false,
+      },
+      frontmatter: {},
+    });
+
+    expect(options.rawHtml).toBe("allow");
+    expect(options.network).toBe("block");
+    expect(options.waitUntil).toBe("networkidle");
+    expect(options.waitForFonts).toBe(false);
   });
 });

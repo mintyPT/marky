@@ -43,4 +43,36 @@ describe("cli", () => {
 
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   }, 30_000);
+
+  it("accepts stable Playwright rendering controls", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "notes.pdf");
+    await writeFile(inputPath, "# Notes\n");
+
+    await execa("tsx", [
+      "src/cli/index.ts",
+      "render",
+      inputPath,
+      outputPath,
+      "--pdf-format",
+      "Letter",
+      "--pdf-margin",
+      "8mm",
+      "--landscape",
+      "--scale",
+      "0.9",
+      "--no-print-background",
+      "--network",
+      "block",
+      "--wait-until",
+      "load",
+      "--no-wait-for-fonts",
+      "--timeout-ms",
+      "30000",
+    ]);
+    const pdf = await readFile(outputPath);
+
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
 });

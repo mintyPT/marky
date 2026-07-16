@@ -32,6 +32,19 @@ Existing output files are protected by default. Pass `--force` to overwrite one:
 npm run dev -- render ./notes.md ./dist/notes.pdf --force
 ```
 
+Core PDF controls are exposed as stable flags:
+
+```bash
+npm run dev -- render ./notes.md ./dist/notes.pdf \
+  --pdf-format Letter \
+  --pdf-margin 8mm \
+  --landscape \
+  --scale 0.9 \
+  --network block \
+  --wait-until load \
+  --timeout-ms 30000
+```
+
 After publishing or linking the package:
 
 ```bash
@@ -75,9 +88,10 @@ Supported v1 render options:
 - `rawHtml`: `sanitize`, `escape`, or `allow`.
 - `theme`: built-in theme name.
 - `css`: additional CSS file paths.
-- `pdf`: PDF options, including `format` and `printBackground`.
-- `network`: `offline` or `allow`.
+- `pdf`: PDF options, including `format`, `margin`, `landscape`, `scale`, and `printBackground`.
+- `network`: `allow` or `block`.
 - `waitUntil`: page readiness state for PDF capture.
+- `waitForFonts`: wait for document fonts before PDF capture.
 - `timeoutMs`: page readiness timeout in milliseconds.
 
 When config, frontmatter, and explicit options overlap, Marky resolves them as

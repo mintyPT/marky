@@ -104,7 +104,7 @@ Create a central resolver for render options and build options. Use the preceden
 ---
 
 ## MARKY-004 · Add Playwright rendering controls
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-005] | blocked_by: [MARKY-003]
 tags: [marky-document-pipeline]
 
@@ -131,6 +131,8 @@ Add a `pdf` option object that maps to stable Playwright PDF concerns such as fo
 
 ### History
 - created · 2026-07-16T21:26:41Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:03:08Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:09:42Z · mauro.goncalo@gmail.com
 
 ---
 
