@@ -1,16 +1,60 @@
-import { describe, expect, it } from "vitest";
-import { createGreeting } from "../src/index.js";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { renderMarkdownToPdf } from "../src/index.js";
 
-describe("createGreeting", () => {
-  it("greets a trimmed name", () => {
-    expect(createGreeting(" World ")).toBe("Hello, World!");
+const workspaces: string[] = [];
+
+async function createWorkspace(): Promise<string> {
+  const workspace = await mkdtemp(join(tmpdir(), "marky-"));
+  workspaces.push(workspace);
+  return workspace;
+}
+
+afterEach(async () => {
+  await Promise.all(workspaces.splice(0).map((workspace) => rm(workspace, { recursive: true, force: true })));
+});
+
+describe("renderMarkdownToPdf", () => {
+  it("renders one Markdown file to a non-empty PDF", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "out", "notes.pdf");
+    await writeFile(inputPath, "# Notes\n\nThis is rendered by Marky.\n");
+
+    const result = await renderMarkdownToPdf(inputPath, { outputPath });
+    const pdf = await readFile(outputPath);
+
+    expect(result.outputPath).toBe(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+    expect(pdf.byteLength).toBeGreaterThan(1_000);
   });
 
-  it("supports custom punctuation", () => {
-    expect(createGreeting("World", { punctuation: "." })).toBe("Hello, World.");
+  it("defaults the output path next to the input document", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const expectedOutputPath = join(workspace, "notes.pdf");
+    await writeFile(inputPath, "# Notes\n");
+
+    const result = await renderMarkdownToPdf(inputPath);
+    const pdf = await readFile(expectedOutputPath);
+
+    expect(result.outputPath).toBe(expectedOutputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   });
 
-  it("rejects an empty name", () => {
-    expect(() => createGreeting(" ")).toThrow("Name must not be empty.");
+  it("refuses to overwrite an existing output unless forced", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "notes.pdf");
+    await writeFile(inputPath, "# Notes\n");
+    await writeFile(outputPath, "existing");
+
+    await expect(renderMarkdownToPdf(inputPath, { outputPath })).rejects.toThrow("Refusing to overwrite");
+
+    await renderMarkdownToPdf(inputPath, { outputPath, force: true });
+    const pdf = await readFile(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   });
 });

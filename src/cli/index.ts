@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { createGreeting } from "../index.js";
+import { renderMarkdownToPdf } from "../index.js";
 
 const program = new Command();
 
-program
-  .name("marky")
-  .description("A TypeScript CLI and library package.")
-  .version("0.1.0");
+program.name("marky").description("Render Markdown documents to PDF.").version("0.1.0");
 
 program
-  .command("greet")
-  .argument("<name>", "Name to greet")
-  .option("-p, --punctuation <mark>", "Greeting punctuation", "!")
-  .action((name: string, options: { punctuation: string }) => {
-    console.log(createGreeting(name, { punctuation: options.punctuation }));
+  .command("render")
+  .argument("<input>", "Markdown file to render")
+  .argument("[output]", "PDF path to write")
+  .option("-f, --force", "Overwrite an existing output file", false)
+  .description("Render one Markdown file to PDF.")
+  .action(async (input: string, output: string | undefined, options: { force: boolean }) => {
+    const result = await renderMarkdownToPdf(input, {
+      outputPath: output,
+      force: options.force,
+    });
+
+    console.log(`Wrote ${result.outputPath}`);
   });
 
 program.parseAsync().catch((error: unknown) => {

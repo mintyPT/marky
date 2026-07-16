@@ -45,7 +45,12 @@
     "release:check": "npm run check && npm test && npm run pack:verify"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "playwright": "^1.61.1",
+    "rehype-stringify": "^10.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5"
   },
   "overrides": {
     "esbuild": "^0.28.1"

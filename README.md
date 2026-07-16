@@ -1,6 +1,6 @@
 # marky
 
-A TypeScript CLI and library package.
+Render Markdown documents to PDF from TypeScript or the command line.
 
 ## Setup
 
@@ -14,20 +14,39 @@ npm run build
 
 ## CLI
 
+Render to an input-adjacent PDF:
+
 ```bash
-npm run dev -- greet World
+npm run dev -- render ./notes.md
+```
+
+Render to a specific path:
+
+```bash
+npm run dev -- render ./notes.md ./dist/notes.pdf
+```
+
+Existing output files are protected by default. Pass `--force` to overwrite one:
+
+```bash
+npm run dev -- render ./notes.md ./dist/notes.pdf --force
 ```
 
 After publishing or linking the package:
 
 ```bash
-marky greet World
+marky render ./notes.md ./notes.pdf
 ```
 
 ## Library
 
 ```ts
-import { createGreeting } from "marky";
+import { renderMarkdownToPdf } from "marky";
 
-console.log(createGreeting("World"));
+const result = await renderMarkdownToPdf("./notes.md", {
+  outputPath: "./notes.pdf",
+  force: true,
+});
+
+console.log(result.outputPath);
 ```

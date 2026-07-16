@@ -5,7 +5,7 @@ groups: [marky-render-slice, marky-document-pipeline, marky-project-build, marky
 ---
 
 ## MARKY-001 · Render one Markdown file to PDF end-to-end
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-002] | blocked_by: []
 tags: [marky-render-slice]
 
@@ -32,6 +32,8 @@ Replace the scaffold greeting behavior with a `renderMarkdownToPdf` workflow and
 
 ### History
 - created · 2026-07-16T21:25:56Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:41:05Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T21:52:04Z · mauro.goncalo@gmail.com
 
 ---
 
