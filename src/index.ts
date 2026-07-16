@@ -1,6 +1,6 @@
 import { mkdir, readFile, stat } from "node:fs/promises";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import fastGlob from "fast-glob";
 import matter from "gray-matter";
 import { type Browser, chromium } from "playwright";
@@ -65,6 +65,8 @@ export interface BuildMarkdownPdfsResult {
 
 export type MarkyErrorCode =
   | "MARKY_BROWSER_MISSING"
+  | "MARKY_ASSET_BASE_REQUIRED"
+  | "MARKY_ASSET_OUTSIDE_BASE"
   | "MARKY_BUILD_AMBIGUOUS_OUTPUT"
   | "MARKY_CONFIG_INVALID"
   | "MARKY_CONFIG_NOT_FOUND"
@@ -254,6 +256,7 @@ export interface ResolvedRenderOptions {
 
 export interface RenderMarkdownDocumentOptions {
   rawHtml?: RawHtmlMode;
+  baseUrl?: string;
 }
 
 const defaultRenderOptions: Omit<ResolvedRenderOptions, "inputPath" | "outputPath"> = {
@@ -379,7 +382,10 @@ async function renderMarkdownToPdfWithBrowser(
   markdown: string,
   resolvedOptions: ResolvedRenderOptions,
 ): Promise<void> {
-  const document = await renderMarkdownDocument(markdown, { rawHtml: resolvedOptions.rawHtml });
+  const document = await renderMarkdownDocument(markdown, {
+    rawHtml: resolvedOptions.rawHtml,
+    baseUrl: dirname(resolvedOptions.inputPath),
+  });
   const html = renderHtmlShell(document, resolvedOptions);
 
   await mkdir(dirname(resolvedOptions.outputPath), { recursive: true });
@@ -632,7 +638,7 @@ export async function renderMarkdownDocument(
   const { title, author, metadata } = normalizeFrontmatter(parsed.data);
 
   return {
-    html: String(file),
+    html: resolveDocumentAssetUrls(String(file), options.baseUrl),
     title,
     author,
     metadata,
@@ -671,6 +677,59 @@ function normalizeFrontmatter(data: Record<string, unknown>): Pick<RenderedMarkd
   delete metadata.author;
 
   return { title, author, metadata };
+}
+
+function resolveDocumentAssetUrls(html: string, baseUrl: string | undefined): string {
+  return html.replace(/\b(src|href)="([^"]+)"/g, (_match, attribute: string, value: string) => {
+    if (!isRelativeAssetUrl(value)) {
+      return `${attribute}="${value}"`;
+    }
+
+    if (!baseUrl) {
+      throw new MarkyRenderError(
+        "MARKY_ASSET_BASE_REQUIRED",
+        `Relative asset ${value} requires a document base URL or directory.`,
+      );
+    }
+
+    const resolved = resolveAssetUrl(value, baseUrl);
+    return `${attribute}="${escapeHtml(resolved)}"`;
+  });
+}
+
+function isRelativeAssetUrl(value: string): boolean {
+  return !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(value);
+}
+
+function resolveAssetUrl(value: string, baseUrl: string): string {
+  const base = toBaseUrl(baseUrl);
+  const resolved = new URL(value, base);
+
+  if (base.protocol === "file:" && resolved.protocol === "file:") {
+    const basePath = fileURLToPath(base);
+    const resolvedPath = fileURLToPath(resolved);
+    const relativePath = relative(basePath, resolvedPath);
+    if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+      throw new MarkyRenderError(
+        "MARKY_ASSET_OUTSIDE_BASE",
+        `Local asset ${value} resolves outside the document base ${basePath}.`,
+      );
+    }
+  }
+
+  return resolved.href;
+}
+
+function toBaseUrl(baseUrl: string): URL {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(baseUrl)) {
+    const url = new URL(baseUrl);
+    if (!url.href.endsWith("/")) {
+      return new URL(`${url.href}/`);
+    }
+    return url;
+  }
+
+  return pathToFileURL(`${resolve(baseUrl)}/`);
 }
 
 export function renderHtmlShell(document: RenderedMarkdownDocument, options: Pick<ResolvedRenderOptions, "css" | "theme"> = defaultRenderOptions): string {

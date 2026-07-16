@@ -129,6 +129,11 @@ as document fields, and other frontmatter keys are preserved on `metadata`.
 Raw HTML is sanitized by default. Use `rawHtml: "escape"` to render raw tags as text, or
 `rawHtml: "allow"` when the input is trusted.
 
+For file renders, relative Markdown assets such as images, links, and CSS resolve from the Markdown
+file directory. For raw Markdown strings, pass a document `baseUrl` when relative assets are used.
+Local relative assets are constrained to that base. Remote assets load when `network` is `allow` and
+are blocked when `network` is `block`.
+
 Supported v1 render options:
 
 - `outputPath`: PDF path to write.

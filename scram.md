@@ -203,7 +203,7 @@ Export `buildMarkdownPdfs` and add `marky build`. Discover inputs from configure
 ---
 
 ## MARKY-007 · Harden local asset and output path handling
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-008] | blocked_by: [MARKY-006]
 tags: [marky-project-build]
 
@@ -230,6 +230,8 @@ For file input, resolve relative Markdown assets from the Markdown file director
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:23:01Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:25:52Z · mauro.goncalo@gmail.com
 
 ---
 

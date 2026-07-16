@@ -83,4 +83,22 @@ title: Print Me
     expect(html).toContain("@media print");
     expect(html).toContain("<main><h1>Body</h1></main>");
   });
+
+  it("resolves relative assets from an explicit base URL", async () => {
+    const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.png)", {
+      baseUrl: "/project/docs",
+    });
+
+    expect(document.html).toContain('href="file:///project/docs/guide/index.html"');
+    expect(document.html).toContain('src="file:///project/docs/assets/logo.png"');
+  });
+
+  it("rejects relative assets without a base URL or outside the base", async () => {
+    await expect(renderMarkdownDocument("![Logo](./assets/logo.png)")).rejects.toMatchObject({
+      code: "MARKY_ASSET_BASE_REQUIRED",
+    });
+    await expect(renderMarkdownDocument("![Secret](../secret.png)", { baseUrl: "/project/docs" })).rejects.toMatchObject({
+      code: "MARKY_ASSET_OUTSIDE_BASE",
+    });
+  });
 });
