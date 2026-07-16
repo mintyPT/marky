@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execa } from "execa";
@@ -97,4 +97,28 @@ describe("cli", () => {
     expect(result.stdout).toContain(outputPath);
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   }, 30_000);
+
+  it("builds configured Markdown inputs", async () => {
+    const workspace = await createWorkspace();
+    await writeFile(
+      join(workspace, "marky.config.json"),
+      JSON.stringify({
+        build: {
+          inputs: ["docs/**/*.md"],
+          rootDir: "docs",
+          outDir: "pdf",
+          concurrency: 1,
+        },
+      }),
+    );
+    await writeFile(join(workspace, "notes.md"), "# ignored\n");
+    await mkdir(join(workspace, "docs"), { recursive: true });
+    await writeFile(join(workspace, "docs", "index.md"), "# Home\n");
+
+    const result = await execa("tsx", [join(process.cwd(), "src/cli/index.ts"), "build"], { cwd: workspace });
+    const pdf = await readFile(join(workspace, "pdf", "index.pdf"));
+
+    expect(result.stdout).toContain("Built 1 PDF");
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 45_000);
 });

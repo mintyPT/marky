@@ -5,6 +5,7 @@ import {
   type PageReadyState,
   type PdfOptions,
   type RawHtmlMode,
+  buildMarkdownPdfs,
   loadMarkyConfig,
   renderMarkdownToPdf,
 } from "../index.js";
@@ -80,6 +81,28 @@ program
       console.log(`Wrote ${result.outputPath}`);
     },
   );
+
+program
+  .command("build")
+  .option("-c, --config <path>", "Path to a Marky config file")
+  .option("--concurrency <count>", "Number of PDFs to render at once", parsePositiveInteger)
+  .description("Render configured Markdown inputs to PDFs.")
+  .action(async (options: { config?: string; concurrency?: number }) => {
+    const loadedConfig = await loadMarkyConfig({ configPath: options.config });
+    const result = await buildMarkdownPdfs({
+      config: loadedConfig?.config,
+      configPath: loadedConfig?.path,
+      concurrency: options.concurrency,
+    });
+
+    console.log(`Built ${result.successes.length} PDF${result.successes.length === 1 ? "" : "s"}.`);
+    if (result.failures.length > 0) {
+      for (const failure of result.failures) {
+        console.error(`${failure.inputPath}: ${failure.error.message}`);
+      }
+      process.exitCode = 1;
+    }
+  });
 
 program.parseAsync().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);

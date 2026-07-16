@@ -170,7 +170,7 @@ Support optional config files in JavaScript/ESM and JSON formats, with a search 
 ---
 
 ## MARKY-006 · Add build command and batch library API
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-007] | blocked_by: [MARKY-005]
 tags: [marky-project-build]
 
@@ -197,6 +197,8 @@ Export `buildMarkdownPdfs` and add `marky build`. Discover inputs from configure
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:15:40Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:22:28Z · mauro.goncalo@gmail.com
 
 ---
 

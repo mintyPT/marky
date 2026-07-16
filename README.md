@@ -58,10 +58,19 @@ After publishing or linking the package:
 marky render ./notes.md ./notes.pdf
 ```
 
+Build every configured Markdown input:
+
+```bash
+npm run dev -- build --config ./marky.config.json
+```
+
+`build` discovers configured `inputs`, writes PDFs under `outDir`, preserves paths relative to
+`rootDir`, and exits non-zero if any file fails.
+
 ## Library
 
 ```ts
-import { renderMarkdownDocument, renderMarkdownToPdf } from "marky";
+import { buildMarkdownPdfs, renderMarkdownDocument, renderMarkdownToPdf } from "marky";
 
 const result = await renderMarkdownToPdf("./notes.md", {
   outputPath: "./notes.pdf",
@@ -80,6 +89,18 @@ title: Notes
 
 console.log(document.title);
 console.log(document.html);
+
+const build = await buildMarkdownPdfs({
+  config: {
+    build: {
+      inputs: ["docs/**/*.md"],
+      rootDir: "docs",
+      outDir: "pdf",
+    },
+  },
+});
+
+console.log(build.successes.length, build.failures.length);
 ```
 
 Config files can be JSON or JavaScript/ESM:

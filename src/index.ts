@@ -1,8 +1,9 @@
 import { mkdir, readFile, stat } from "node:fs/promises";
-import { dirname, extname, isAbsolute, join, resolve } from "node:path";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import fastGlob from "fast-glob";
 import matter from "gray-matter";
-import { chromium } from "playwright";
+import { type Browser, chromium } from "playwright";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
@@ -31,8 +32,40 @@ export interface RenderMarkdownToPdfResult {
   outputPath: string;
 }
 
+export interface BuildMarkdownPdfsOptions {
+  cwd?: string;
+  config?: MarkyConfig;
+  configPath?: string;
+  inputs?: string[];
+  rootDir?: string;
+  outDir?: string;
+  concurrency?: number;
+  force?: boolean;
+  render?: RenderOptionsInput;
+}
+
+export interface BuildMarkdownPdfSuccess {
+  inputPath: string;
+  outputPath: string;
+}
+
+export interface BuildMarkdownPdfFailure {
+  inputPath: string;
+  outputPath?: string;
+  error: {
+    code: MarkyErrorCode;
+    message: string;
+  };
+}
+
+export interface BuildMarkdownPdfsResult {
+  successes: BuildMarkdownPdfSuccess[];
+  failures: BuildMarkdownPdfFailure[];
+}
+
 export type MarkyErrorCode =
   | "MARKY_BROWSER_MISSING"
+  | "MARKY_BUILD_AMBIGUOUS_OUTPUT"
   | "MARKY_CONFIG_INVALID"
   | "MARKY_CONFIG_NOT_FOUND"
   | "MARKY_RENDER_FAILED";
@@ -259,15 +292,100 @@ export async function renderMarkdownToPdf(
     throw new Error(`Refusing to overwrite existing output: ${resolvedOptions.outputPath}`);
   }
 
+  let browser: Browser | undefined;
+  try {
+    browser = await chromium.launch();
+    await renderMarkdownToPdfWithBrowser(browser, markdown, resolvedOptions);
+  } catch (error) {
+    throw normalizeRenderError(error);
+  } finally {
+    await browser?.close();
+  }
+
+  return {
+    inputPath: resolvedInputPath,
+    outputPath: resolvedOptions.outputPath,
+  };
+}
+
+export async function buildMarkdownPdfs(options: BuildMarkdownPdfsOptions = {}): Promise<BuildMarkdownPdfsResult> {
+  const cwd = resolve(options.cwd ?? process.cwd());
+  const configBase = options.configPath ? dirname(resolve(cwd, options.configPath)) : cwd;
+  const buildOptions = mergeBuildOptions(options.config?.build, options);
+  const inputs = buildOptions.inputs ?? ["**/*.md"];
+  const rootDir = resolvePath(buildOptions.rootDir ?? ".", configBase);
+  const outDir = resolvePath(buildOptions.outDir ?? "pdf", configBase);
+  const concurrency = Math.max(1, buildOptions.concurrency ?? 1);
+  const inputPaths = await fastGlob(inputs, {
+    absolute: true,
+    cwd: configBase,
+    onlyFiles: true,
+  });
+  const jobs = inputPaths.map((inputPath) => ({
+    inputPath,
+    outputPath: outputPathForBuildInput(inputPath, rootDir, outDir),
+  }));
+  const successes: BuildMarkdownPdfSuccess[] = [];
+  const failures: BuildMarkdownPdfFailure[] = [];
+
+  let browser: Browser | undefined;
+  try {
+    browser = await chromium.launch();
+    await runBuildJobs(jobs, concurrency, async (job) => {
+      if (job.outputPath instanceof MarkyRenderError) {
+        failures.push({
+          inputPath: job.inputPath,
+          error: { code: job.outputPath.code, message: job.outputPath.message },
+        });
+        return;
+      }
+
+      try {
+        const markdown = await readFile(job.inputPath, "utf8");
+        const parsed = matter(markdown);
+        const resolvedOptions = resolveRenderOptions({
+          inputPath: job.inputPath,
+          explicit: {
+            ...(options.render ?? {}),
+            force: buildOptions.force ?? true,
+            outputPath: job.outputPath,
+          },
+          frontmatter: parsed.data,
+          config: options.config?.render,
+          configPath: options.configPath,
+        });
+        await renderMarkdownToPdfWithBrowser(browser!, markdown, resolvedOptions);
+        successes.push({ inputPath: job.inputPath, outputPath: job.outputPath });
+      } catch (error) {
+        const normalized = normalizeRenderError(error);
+        failures.push({
+          inputPath: job.inputPath,
+          outputPath: job.outputPath,
+          error: { code: normalized.code, message: normalized.message },
+        });
+      }
+    });
+  } catch (error) {
+    throw normalizeRenderError(error);
+  } finally {
+    await browser?.close();
+  }
+
+  return { successes, failures };
+}
+
+async function renderMarkdownToPdfWithBrowser(
+  browser: Browser,
+  markdown: string,
+  resolvedOptions: ResolvedRenderOptions,
+): Promise<void> {
   const document = await renderMarkdownDocument(markdown, { rawHtml: resolvedOptions.rawHtml });
   const html = renderHtmlShell(document, resolvedOptions);
 
   await mkdir(dirname(resolvedOptions.outputPath), { recursive: true });
 
-  let browser;
+  const page = await browser.newPage();
   try {
-    browser = await chromium.launch();
-    const page = await browser.newPage();
     if (resolvedOptions.network === "block") {
       await page.route(/^https?:\/\//, (route) => route.abort());
     }
@@ -283,16 +401,9 @@ export async function renderMarkdownToPdf(
       path: resolvedOptions.outputPath,
       printBackground: resolvedOptions.pdf.printBackground,
     });
-  } catch (error) {
-    throw normalizeRenderError(error);
   } finally {
-    await browser?.close();
+    await page.close();
   }
-
-  return {
-    inputPath: resolvedInputPath,
-    outputPath: resolvedOptions.outputPath,
-  };
 }
 
 export function normalizeRenderError(error: unknown): MarkyRenderError {
@@ -355,6 +466,50 @@ function resolveOutputPath(input: ResolveRenderOptionsInput, frontmatter: Render
     return resolvePath(input.config.outputPath, dirname(resolve(input.configPath ?? inputPath)));
   }
   return defaultPdfPath(inputPath);
+}
+
+function mergeBuildOptions(config: BuildOptionsInput | undefined, explicit: BuildMarkdownPdfsOptions): BuildOptionsInput {
+  return {
+    ...config,
+    inputs: explicit.inputs ?? config?.inputs,
+    rootDir: explicit.rootDir ?? config?.rootDir,
+    outDir: explicit.outDir ?? config?.outDir,
+    concurrency: explicit.concurrency ?? config?.concurrency,
+    force: explicit.force ?? config?.force,
+  };
+}
+
+function outputPathForBuildInput(inputPath: string, rootDir: string, outDir: string): string | MarkyRenderError {
+  const relativeInputPath = relative(rootDir, inputPath);
+  if (relativeInputPath.startsWith("..") || isAbsolute(relativeInputPath)) {
+    return new MarkyRenderError(
+      "MARKY_BUILD_AMBIGUOUS_OUTPUT",
+      `Cannot map ${inputPath} under output directory because it is outside rootDir ${rootDir}.`,
+    );
+  }
+
+  const extension = extname(relativeInputPath);
+  const outputRelativePath =
+    extension.length > 0 ? `${relativeInputPath.slice(0, -extension.length)}.pdf` : `${relativeInputPath}.pdf`;
+  return join(outDir, outputRelativePath);
+}
+
+async function runBuildJobs<Job>(
+  jobs: Job[],
+  concurrency: number,
+  worker: (job: Job) => Promise<void>,
+): Promise<void> {
+  let nextIndex = 0;
+
+  async function runWorker(): Promise<void> {
+    while (nextIndex < jobs.length) {
+      const job = jobs[nextIndex];
+      nextIndex += 1;
+      await worker(job);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, jobs.length) }, () => runWorker()));
 }
 
 function mergeRenderOptions(...inputs: Array<RenderOptionsInput | undefined>): RenderOptionsInput {
