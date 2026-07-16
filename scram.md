@@ -38,7 +38,7 @@ Replace the scaffold greeting behavior with a `renderMarkdownToPdf` workflow and
 ---
 
 ## MARKY-002 · Build the unified Markdown document pipeline
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-003] | blocked_by: [MARKY-001]
 tags: [marky-document-pipeline]
 
@@ -65,6 +65,8 @@ Introduce a unified processor that parses Markdown, supports GitHub-flavored Mar
 
 ### History
 - created · 2026-07-16T21:26:20Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:53:03Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T21:58:15Z · mauro.goncalo@gmail.com
 
 ---
 

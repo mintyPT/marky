@@ -41,12 +41,29 @@ marky render ./notes.md ./notes.pdf
 ## Library
 
 ```ts
-import { renderMarkdownToPdf } from "marky";
+import { renderMarkdownDocument, renderMarkdownToPdf } from "marky";
 
 const result = await renderMarkdownToPdf("./notes.md", {
   outputPath: "./notes.pdf",
   force: true,
+  rawHtml: "sanitize",
 });
 
 console.log(result.outputPath);
+
+const document = await renderMarkdownDocument(`---
+title: Notes
+---
+
+# Hello
+`);
+
+console.log(document.title);
+console.log(document.html);
 ```
+
+Markdown rendering supports GitHub-flavored Markdown. Frontmatter `title` and `author` are exposed
+as document fields, and other frontmatter keys are preserved on `metadata`.
+
+Raw HTML is sanitized by default. Use `rawHtml: "escape"` to render raw tags as text, or
+`rawHtml: "allow"` when the input is trusted.

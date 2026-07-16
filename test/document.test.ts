@@ -1,0 +1,82 @@
+import { describe, expect, it } from "vitest";
+import { renderHtmlShell, renderMarkdownDocument } from "../src/index.js";
+
+describe("renderMarkdownDocument", () => {
+  it("renders GitHub-flavored Markdown features", async () => {
+    const document = await renderMarkdownDocument(`
+# Project
+
+| Task | Done |
+| --- | --- |
+| Ship renderer | yes |
+
+- [x] write tests
+- [ ] publish package
+
+~~obsolete~~
+
+Contact https://example.com/docs
+`);
+
+    expect(document.html).toContain("<table>");
+    expect(document.html).toContain('type="checkbox" checked disabled');
+    expect(document.html).toContain("<del>obsolete</del>");
+    expect(document.html).toContain('<a href="https://example.com/docs">https://example.com/docs</a>');
+  });
+
+  it("extracts known frontmatter fields and preserves arbitrary metadata", async () => {
+    const document = await renderMarkdownDocument(`---
+title: Quarterly Notes
+author: Ada Lovelace
+theme: report
+draft: true
+---
+
+# Body
+`);
+
+    expect(document.title).toBe("Quarterly Notes");
+    expect(document.author).toBe("Ada Lovelace");
+    expect(document.metadata).toEqual({
+      theme: "report",
+      draft: true,
+    });
+    expect(document.html).toContain("<h1>Body</h1>");
+    expect(document.html).not.toContain("Quarterly Notes");
+  });
+
+  it("sanitizes raw HTML by default", async () => {
+    const document = await renderMarkdownDocument("<section><strong>Safe</strong><script>alert('x')</script></section>");
+
+    expect(document.html).toContain("<section><strong>Safe</strong></section>");
+    expect(document.html).not.toContain("<script>");
+  });
+
+  it("can escape or allow raw HTML", async () => {
+    const markdown = "<div><em>Raw</em><script>alert('x')</script></div>";
+
+    const escaped = await renderMarkdownDocument(markdown, { rawHtml: "escape" });
+    const allowed = await renderMarkdownDocument(markdown, { rawHtml: "allow" });
+
+    expect(escaped.html).toContain("&#x3C;div>");
+    expect(escaped.html).toContain("&#x3C;script>");
+    expect(escaped.html).not.toContain("<div>");
+    expect(allowed.html).toContain("<script>alert('x')</script>");
+  });
+
+  it("wraps documents in the default printable HTML shell", async () => {
+    const document = await renderMarkdownDocument(`---
+title: Print Me
+---
+
+# Body
+`);
+
+    const html = renderHtmlShell(document);
+
+    expect(html).toContain("<title>Print Me</title>");
+    expect(html).toContain("@page");
+    expect(html).toContain("@media print");
+    expect(html).toContain("<main><h1>Body</h1></main>");
+  });
+});

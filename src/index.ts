@@ -1,7 +1,11 @@
 import { mkdir, readFile, stat } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
+import matter from "gray-matter";
 import { chromium } from "playwright";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
@@ -9,11 +13,25 @@ import { unified } from "unified";
 export interface RenderMarkdownToPdfOptions {
   outputPath?: string;
   force?: boolean;
+  rawHtml?: RawHtmlMode;
 }
 
 export interface RenderMarkdownToPdfResult {
   inputPath: string;
   outputPath: string;
+}
+
+export interface RenderedMarkdownDocument {
+  html: string;
+  title?: string;
+  author?: string;
+  metadata: Record<string, unknown>;
+}
+
+export type RawHtmlMode = "sanitize" | "escape" | "allow";
+
+export interface RenderMarkdownDocumentOptions {
+  rawHtml?: RawHtmlMode;
 }
 
 export async function renderMarkdownToPdf(
@@ -28,8 +46,8 @@ export async function renderMarkdownToPdf(
   }
 
   const markdown = await readFile(resolvedInputPath, "utf8");
-  const content = await renderMarkdownToHtml(markdown);
-  const html = renderHtmlShell(content);
+  const document = await renderMarkdownDocument(markdown, { rawHtml: options.rawHtml });
+  const html = renderHtmlShell(document);
 
   await mkdir(dirname(resolvedOutputPath), { recursive: true });
 
@@ -52,18 +70,66 @@ export async function renderMarkdownToPdf(
   };
 }
 
-async function renderMarkdownToHtml(markdown: string): Promise<string> {
-  const file = await unified().use(remarkParse).use(remarkRehype).use(rehypeStringify).process(markdown);
-  return String(file);
+export async function renderMarkdownDocument(
+  markdown: string,
+  options: RenderMarkdownDocumentOptions = {},
+): Promise<RenderedMarkdownDocument> {
+  const parsed = matter(markdown);
+  const rawHtml = options.rawHtml ?? "sanitize";
+  const file = await buildMarkdownProcessor(rawHtml).process(prepareMarkdownContent(parsed.content, rawHtml));
+  const { title, author, metadata } = normalizeFrontmatter(parsed.data);
+
+  return {
+    html: String(file),
+    title,
+    author,
+    metadata,
+  };
 }
 
-function renderHtmlShell(content: string): string {
+function buildMarkdownProcessor(rawHtml: RawHtmlMode) {
+  const processor = unified().use(remarkParse).use(remarkGfm);
+
+  if (rawHtml === "escape") {
+    return processor.use(remarkRehype).use(rehypeStringify);
+  }
+
+  processor.use(remarkRehype, { allowDangerousHtml: true }).use(rehypeRaw);
+
+  if (rawHtml === "sanitize") {
+    processor.use(rehypeSanitize);
+  }
+
+  return processor.use(rehypeStringify);
+}
+
+function prepareMarkdownContent(markdown: string, rawHtml: RawHtmlMode): string {
+  if (rawHtml !== "escape") {
+    return markdown;
+  }
+
+  return markdown.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+function normalizeFrontmatter(data: Record<string, unknown>): Pick<RenderedMarkdownDocument, "title" | "author" | "metadata"> {
+  const metadata = { ...data };
+  const title = typeof metadata.title === "string" ? metadata.title : undefined;
+  const author = typeof metadata.author === "string" ? metadata.author : undefined;
+  delete metadata.title;
+  delete metadata.author;
+
+  return { title, author, metadata };
+}
+
+export function renderHtmlShell(document: RenderedMarkdownDocument): string {
+  const title = document.title ?? "Marky document";
+
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marky document</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     :root {
       color: #1f2933;
@@ -112,9 +178,18 @@ function renderHtmlShell(content: string): string {
   </style>
 </head>
 <body>
-  <main>${content}</main>
+  <main>${document.html}</main>
 </body>
 </html>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function defaultPdfPath(inputPath: string): string {

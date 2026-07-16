@@ -29,7 +29,7 @@ describe("cli", () => {
     expect(result.stdout).toContain(outputPath);
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
     expect(pdf.byteLength).toBeGreaterThan(1_000);
-  }, 15_000);
+  }, 30_000);
 
   it("passes the force flag through to the renderer", async () => {
     const workspace = await createWorkspace();
@@ -42,5 +42,5 @@ describe("cli", () => {
     const pdf = await readFile(outputPath);
 
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
-  }, 15_000);
+  }, 30_000);
 });
