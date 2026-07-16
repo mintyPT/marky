@@ -64,6 +64,18 @@ describe("resolveRenderOptions", () => {
     ]);
   });
 
+  it("resolves config output paths relative to the config file", () => {
+    const options = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      configPath: "/project/config/marky.config.json",
+      config: {
+        outputPath: "./pdf/report.pdf",
+      },
+    });
+
+    expect(options.outputPath).toBe("/project/config/pdf/report.pdf");
+  });
+
   it("does not let absent frontmatter keys erase config values", () => {
     const options = resolveRenderOptions({
       inputPath: "/project/docs/report.md",

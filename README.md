@@ -32,6 +32,13 @@ Existing output files are protected by default. Pass `--force` to overwrite one:
 npm run dev -- render ./notes.md ./dist/notes.pdf --force
 ```
 
+Marky discovers `marky.config.mjs`, `marky.config.js`, `marky.config.cjs`, or
+`marky.config.json` from the current directory upward. Pass `--config` to use an explicit file:
+
+```bash
+npm run dev -- render ./notes.md --config ./marky.config.json
+```
+
 Core PDF controls are exposed as stable flags:
 
 ```bash
@@ -73,6 +80,26 @@ title: Notes
 
 console.log(document.title);
 console.log(document.html);
+```
+
+Config files can be JSON or JavaScript/ESM:
+
+```js
+import { defineConfig } from "marky";
+
+export default defineConfig({
+  render: {
+    theme: "docs",
+    css: ["./theme/print.css"],
+    rawHtml: "sanitize",
+  },
+  build: {
+    inputs: ["docs/**/*.md"],
+    rootDir: "docs",
+    outDir: "pdf",
+    concurrency: 1,
+  },
+});
 ```
 
 Markdown rendering supports GitHub-flavored Markdown. Frontmatter `title` and `author` are exposed

@@ -5,6 +5,7 @@ import {
   type PageReadyState,
   type PdfOptions,
   type RawHtmlMode,
+  loadMarkyConfig,
   renderMarkdownToPdf,
 } from "../index.js";
 
@@ -16,6 +17,7 @@ program
   .command("render")
   .argument("<input>", "Markdown file to render")
   .argument("[output]", "PDF path to write")
+  .option("-c, --config <path>", "Path to a Marky config file")
   .option("-f, --force", "Overwrite an existing output file", false)
   .option("--raw-html <mode>", "Raw HTML policy: sanitize, escape, or allow", parseRawHtmlMode)
   .option("--pdf-format <format>", "PDF page format: A4, Letter, or Legal", parsePdfFormat)
@@ -33,22 +35,25 @@ program
       input: string,
       output: string | undefined,
       options: {
-        force: boolean;
+        force?: boolean;
+        config?: string;
         rawHtml?: RawHtmlMode;
         pdfFormat?: PdfOptions["format"];
         pdfMargin?: string;
-        landscape: boolean;
+        landscape?: boolean;
         scale?: number;
-        printBackground: boolean;
+        printBackground?: boolean;
         network?: NetworkPolicy;
         waitUntil?: PageReadyState;
-        waitForFonts: boolean;
+        waitForFonts?: boolean;
         timeoutMs?: number;
       },
+      command: Command,
     ) => {
+      const loadedConfig = await loadMarkyConfig({ configPath: options.config });
       const result = await renderMarkdownToPdf(input, {
         outputPath: output,
-        force: options.force,
+        force: optionValue(command, "force", options.force),
         rawHtml: options.rawHtml,
         pdf: {
           format: options.pdfFormat,
@@ -58,16 +63,18 @@ program
                 right: options.pdfMargin,
                 bottom: options.pdfMargin,
                 left: options.pdfMargin,
-              }
+            }
             : undefined,
-          landscape: options.landscape || undefined,
+          landscape: optionValue(command, "landscape", options.landscape),
           scale: options.scale,
-          printBackground: options.printBackground,
+          printBackground: optionValue(command, "printBackground", options.printBackground),
         },
         network: options.network,
         waitUntil: options.waitUntil,
-        waitForFonts: options.waitForFonts,
+        waitForFonts: optionValue(command, "waitForFonts", options.waitForFonts),
         timeoutMs: options.timeoutMs,
+        config: loadedConfig?.config.render,
+        configPath: loadedConfig?.path,
       });
 
       console.log(`Wrote ${result.outputPath}`);
@@ -118,4 +125,8 @@ function parseEnum<const Value extends string>(value: string, values: readonly V
   }
 
   throw new Error(`Invalid ${label}: ${value}. Expected one of ${values.join(", ")}.`);
+}
+
+function optionValue<Value>(command: Command, name: string, value: Value): Value | undefined {
+  return command.getOptionValueSource(name) === "default" ? undefined : value;
 }

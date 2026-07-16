@@ -75,4 +75,26 @@ describe("cli", () => {
 
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   }, 30_000);
+
+  it("discovers config defaults for render", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "configured.pdf");
+    await writeFile(inputPath, "# Notes\n");
+    await writeFile(
+      join(workspace, "marky.config.json"),
+      JSON.stringify({
+        render: {
+          outputPath: "./configured.pdf",
+          pdf: { format: "Letter" },
+        },
+      }),
+    );
+
+    const result = await execa("tsx", [join(process.cwd(), "src/cli/index.ts"), "render", inputPath], { cwd: workspace });
+    const pdf = await readFile(outputPath);
+
+    expect(result.stdout).toContain(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
 });

@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat } from "node:fs/promises";
-import { dirname, extname, isAbsolute, resolve } from "node:path";
+import { dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import matter from "gray-matter";
 import { chromium } from "playwright";
@@ -31,7 +31,11 @@ export interface RenderMarkdownToPdfResult {
   outputPath: string;
 }
 
-export type MarkyErrorCode = "MARKY_BROWSER_MISSING" | "MARKY_RENDER_FAILED";
+export type MarkyErrorCode =
+  | "MARKY_BROWSER_MISSING"
+  | "MARKY_CONFIG_INVALID"
+  | "MARKY_CONFIG_NOT_FOUND"
+  | "MARKY_RENDER_FAILED";
 
 export class MarkyRenderError extends Error {
   readonly code: MarkyErrorCode;
@@ -44,6 +48,115 @@ export class MarkyRenderError extends Error {
     this.cause = options.cause;
   }
 }
+
+export interface BuildOptionsInput {
+  inputs?: string[];
+  rootDir?: string;
+  outDir?: string;
+  concurrency?: number;
+  force?: boolean;
+}
+
+export interface MarkyConfig {
+  render?: RenderOptionsInput;
+  build?: BuildOptionsInput;
+}
+
+export interface LoadedMarkyConfig {
+  path: string;
+  config: MarkyConfig;
+}
+
+export interface LoadMarkyConfigOptions {
+  configPath?: string;
+  cwd?: string;
+}
+
+const defaultConfigFilenames = ["marky.config.mjs", "marky.config.js", "marky.config.cjs", "marky.config.json"];
+
+export function defineConfig<const Config extends MarkyConfig>(config: Config): Config {
+  return config;
+}
+
+export async function loadMarkyConfig(options: LoadMarkyConfigOptions = {}): Promise<LoadedMarkyConfig | undefined> {
+  const cwd = resolve(options.cwd ?? process.cwd());
+  const configPath = options.configPath ? resolve(cwd, options.configPath) : await findMarkyConfig(cwd);
+
+  if (!configPath) {
+    return undefined;
+  }
+
+  if (!(await pathExists(configPath))) {
+    throw new MarkyRenderError("MARKY_CONFIG_NOT_FOUND", `Marky config file was not found: ${configPath}`);
+  }
+
+  try {
+    const config = await readConfigFile(configPath);
+    return {
+      path: configPath,
+      config,
+    };
+  } catch (error) {
+    if (error instanceof MarkyRenderError) {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    throw new MarkyRenderError("MARKY_CONFIG_INVALID", `Could not load Marky config ${configPath}: ${message}`, {
+      cause: error,
+    });
+  }
+}
+
+export async function findMarkyConfig(cwd = process.cwd()): Promise<string | undefined> {
+  let directory = resolve(cwd);
+
+  while (true) {
+    for (const filename of defaultConfigFilenames) {
+      const candidate = join(directory, filename);
+      if (await pathExists(candidate)) {
+        return candidate;
+      }
+    }
+
+    const parent = dirname(directory);
+    if (parent === directory) {
+      return undefined;
+    }
+    directory = parent;
+  }
+}
+
+async function readConfigFile(configPath: string): Promise<MarkyConfig> {
+  const extension = extname(configPath);
+  if (extension === ".json") {
+    return validateMarkyConfig(JSON.parse(await readFile(configPath, "utf8")), configPath);
+  }
+
+  if ([".js", ".mjs", ".cjs"].includes(extension)) {
+    const imported = (await import(`${pathToFileURL(configPath).href}?t=${Date.now()}`)) as { default?: unknown };
+    return validateMarkyConfig(imported.default, configPath);
+  }
+
+  throw new MarkyRenderError("MARKY_CONFIG_INVALID", `Unsupported Marky config extension: ${extension}`);
+}
+
+function validateMarkyConfig(value: unknown, configPath: string): MarkyConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new MarkyRenderError("MARKY_CONFIG_INVALID", `Marky config must export an object: ${configPath}`);
+  }
+
+  const config = value as MarkyConfig;
+  if (config.render !== undefined && (!config.render || typeof config.render !== "object" || Array.isArray(config.render))) {
+    throw new MarkyRenderError("MARKY_CONFIG_INVALID", "`render` config must be an object.");
+  }
+  if (config.build !== undefined && (!config.build || typeof config.build !== "object" || Array.isArray(config.build))) {
+    throw new MarkyRenderError("MARKY_CONFIG_INVALID", "`build` config must be an object.");
+  }
+
+  return config;
+}
+
 
 export interface RenderedMarkdownDocument {
   html: string;
@@ -203,7 +316,7 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
   const inputPath = resolve(input.inputPath);
   const frontmatter = frontmatterToRenderOptions(input.frontmatter ?? {});
   const merged = mergeRenderOptions(input.config, frontmatter, input.explicit);
-  const outputPath = resolvePath(merged.outputPath ?? defaultPdfPath(inputPath), process.cwd());
+  const outputPath = resolveOutputPath(input, frontmatter);
 
   return {
     inputPath,
@@ -228,6 +341,20 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
     waitForFonts: merged.waitForFonts ?? defaultRenderOptions.waitForFonts,
     timeoutMs: merged.timeoutMs ?? defaultRenderOptions.timeoutMs,
   };
+}
+
+function resolveOutputPath(input: ResolveRenderOptionsInput, frontmatter: RenderOptionsInput): string {
+  const inputPath = resolve(input.inputPath);
+  if (input.explicit?.outputPath) {
+    return resolvePath(input.explicit.outputPath, process.cwd());
+  }
+  if (frontmatter.outputPath) {
+    return resolvePath(frontmatter.outputPath, dirname(inputPath));
+  }
+  if (input.config?.outputPath) {
+    return resolvePath(input.config.outputPath, dirname(resolve(input.configPath ?? inputPath)));
+  }
+  return defaultPdfPath(inputPath);
 }
 
 function mergeRenderOptions(...inputs: Array<RenderOptionsInput | undefined>): RenderOptionsInput {

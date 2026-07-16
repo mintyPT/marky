@@ -137,7 +137,7 @@ Add a `pdf` option object that maps to stable Playwright PDF concerns such as fo
 ---
 
 ## MARKY-005 · Add optional project config loading
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-006] | blocked_by: [MARKY-004]
 tags: [marky-project-build]
 
@@ -164,6 +164,8 @@ Support optional config files in JavaScript/ESM and JSON formats, with a search 
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:10:17Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:15:16Z · mauro.goncalo@gmail.com
 
 ---
 
