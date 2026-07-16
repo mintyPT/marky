@@ -71,7 +71,7 @@ Introduce a unified processor that parses Markdown, supports GitHub-flavored Mar
 ---
 
 ## MARKY-003 · Add option resolution across defaults config frontmatter and explicit inputs
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-004] | blocked_by: [MARKY-002]
 tags: [marky-document-pipeline]
 
@@ -98,6 +98,8 @@ Create a central resolver for render options and build options. Use the preceden
 
 ### History
 - created · 2026-07-16T21:26:40Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:58:39Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:02:35Z · mauro.goncalo@gmail.com
 
 ---
 

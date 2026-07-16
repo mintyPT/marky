@@ -67,3 +67,18 @@ as document fields, and other frontmatter keys are preserved on `metadata`.
 
 Raw HTML is sanitized by default. Use `rawHtml: "escape"` to render raw tags as text, or
 `rawHtml: "allow"` when the input is trusted.
+
+Supported v1 render options:
+
+- `outputPath`: PDF path to write.
+- `force`: overwrite an existing output file.
+- `rawHtml`: `sanitize`, `escape`, or `allow`.
+- `theme`: built-in theme name.
+- `css`: additional CSS file paths.
+- `pdf`: PDF options, including `format` and `printBackground`.
+- `network`: `offline` or `allow`.
+- `waitUntil`: page readiness state for PDF capture.
+- `timeoutMs`: page readiness timeout in milliseconds.
+
+When config, frontmatter, and explicit options overlap, Marky resolves them as
+explicit options over frontmatter, frontmatter over config, and config over defaults.

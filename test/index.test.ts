@@ -57,4 +57,37 @@ describe("renderMarkdownToPdf", () => {
     const pdf = await readFile(outputPath);
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   });
+
+  it("uses normalized render options from frontmatter config and explicit inputs", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "notes.pdf");
+    await writeFile(
+      inputPath,
+      `---
+rawHtml: allow
+pdf:
+  format: Letter
+---
+
+<script>window.markyUnsafe = true</script>
+# Notes
+`,
+    );
+    await writeFile(outputPath, "existing");
+
+    const result = await renderMarkdownToPdf(inputPath, {
+      outputPath,
+      force: true,
+      rawHtml: "sanitize",
+      config: {
+        force: false,
+        pdf: { format: "A4" },
+      },
+    });
+    const pdf = await readFile(outputPath);
+
+    expect(result.outputPath).toBe(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
 });

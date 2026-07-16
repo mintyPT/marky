@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat } from "node:fs/promises";
-import { dirname, extname, resolve } from "node:path";
+import { dirname, extname, isAbsolute, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import matter from "gray-matter";
 import { chromium } from "playwright";
 import rehypeRaw from "rehype-raw";
@@ -14,6 +15,14 @@ export interface RenderMarkdownToPdfOptions {
   outputPath?: string;
   force?: boolean;
   rawHtml?: RawHtmlMode;
+  theme?: string;
+  css?: string[];
+  pdf?: Partial<PdfOptions>;
+  network?: NetworkPolicy;
+  waitUntil?: PageReadyState;
+  timeoutMs?: number;
+  config?: RenderOptionsInput;
+  configPath?: string;
 }
 
 export interface RenderMarkdownToPdfResult {
@@ -29,36 +38,100 @@ export interface RenderedMarkdownDocument {
 }
 
 export type RawHtmlMode = "sanitize" | "escape" | "allow";
+export type NetworkPolicy = "offline" | "allow";
+export type PageReadyState = "load" | "domcontentloaded" | "networkidle";
+
+export interface PdfOptions {
+  format: "A4" | "Letter" | "Legal";
+  printBackground: boolean;
+}
+
+export interface RenderOptionsInput {
+  outputPath?: string;
+  force?: boolean;
+  rawHtml?: RawHtmlMode;
+  theme?: string;
+  css?: string[];
+  pdf?: Partial<PdfOptions>;
+  network?: NetworkPolicy;
+  waitUntil?: PageReadyState;
+  timeoutMs?: number;
+}
+
+export interface ResolveRenderOptionsInput {
+  inputPath: string;
+  explicit?: RenderOptionsInput;
+  frontmatter?: Record<string, unknown>;
+  config?: RenderOptionsInput;
+  configPath?: string;
+}
+
+export interface ResolvedRenderOptions {
+  inputPath: string;
+  outputPath: string;
+  force: boolean;
+  rawHtml: RawHtmlMode;
+  theme: string;
+  css: string[];
+  pdf: PdfOptions;
+  network: NetworkPolicy;
+  waitUntil: PageReadyState;
+  timeoutMs: number;
+}
 
 export interface RenderMarkdownDocumentOptions {
   rawHtml?: RawHtmlMode;
 }
+
+const defaultRenderOptions: Omit<ResolvedRenderOptions, "inputPath" | "outputPath"> = {
+  force: false,
+  rawHtml: "sanitize",
+  theme: "default",
+  css: [],
+  pdf: {
+    format: "A4",
+    printBackground: true,
+  },
+  network: "offline",
+  waitUntil: "networkidle",
+  timeoutMs: 30_000,
+};
 
 export async function renderMarkdownToPdf(
   inputPath: string,
   options: RenderMarkdownToPdfOptions = {},
 ): Promise<RenderMarkdownToPdfResult> {
   const resolvedInputPath = resolve(inputPath);
-  const resolvedOutputPath = resolve(options.outputPath ?? defaultPdfPath(resolvedInputPath));
+  const markdown = await readFile(resolvedInputPath, "utf8");
+  const parsed = matter(markdown);
+  const resolvedOptions = resolveRenderOptions({
+    inputPath: resolvedInputPath,
+    explicit: options,
+    frontmatter: parsed.data,
+    config: options.config,
+    configPath: options.configPath,
+  });
 
-  if (!options.force && (await pathExists(resolvedOutputPath))) {
-    throw new Error(`Refusing to overwrite existing output: ${resolvedOutputPath}`);
+  if (!resolvedOptions.force && (await pathExists(resolvedOptions.outputPath))) {
+    throw new Error(`Refusing to overwrite existing output: ${resolvedOptions.outputPath}`);
   }
 
-  const markdown = await readFile(resolvedInputPath, "utf8");
-  const document = await renderMarkdownDocument(markdown, { rawHtml: options.rawHtml });
-  const html = renderHtmlShell(document);
+  const document = await renderMarkdownDocument(markdown, { rawHtml: resolvedOptions.rawHtml });
+  const html = renderHtmlShell(document, resolvedOptions);
 
-  await mkdir(dirname(resolvedOutputPath), { recursive: true });
+  await mkdir(dirname(resolvedOptions.outputPath), { recursive: true });
 
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
+    if (resolvedOptions.network === "offline") {
+      await page.route(/^https?:\/\//, (route) => route.abort());
+    }
+    await page.setContent(html, { waitUntil: resolvedOptions.waitUntil, timeout: resolvedOptions.timeoutMs });
     await page.pdf({
-      format: "A4",
-      path: resolvedOutputPath,
-      printBackground: true,
+      format: resolvedOptions.pdf.format,
+      path: resolvedOptions.outputPath,
+      printBackground: resolvedOptions.pdf.printBackground,
     });
   } finally {
     await browser.close();
@@ -66,8 +139,114 @@ export async function renderMarkdownToPdf(
 
   return {
     inputPath: resolvedInputPath,
-    outputPath: resolvedOutputPath,
+    outputPath: resolvedOptions.outputPath,
   };
+}
+
+export function resolveRenderOptions(input: ResolveRenderOptionsInput): ResolvedRenderOptions {
+  const inputPath = resolve(input.inputPath);
+  const frontmatter = frontmatterToRenderOptions(input.frontmatter ?? {});
+  const merged = mergeRenderOptions(input.config, frontmatter, input.explicit);
+  const outputPath = resolvePath(merged.outputPath ?? defaultPdfPath(inputPath), process.cwd());
+
+  return {
+    inputPath,
+    outputPath,
+    force: merged.force ?? defaultRenderOptions.force,
+    rawHtml: merged.rawHtml ?? defaultRenderOptions.rawHtml,
+    theme: merged.theme ?? defaultRenderOptions.theme,
+    css: [
+      ...resolvePaths(input.config?.css ?? [], dirname(resolve(input.configPath ?? inputPath))),
+      ...resolvePaths(frontmatter.css ?? [], dirname(inputPath)),
+      ...resolvePaths(input.explicit?.css ?? [], process.cwd()),
+    ],
+    pdf: {
+      format: merged.pdf?.format ?? defaultRenderOptions.pdf.format,
+      printBackground: merged.pdf?.printBackground ?? defaultRenderOptions.pdf.printBackground,
+    },
+    network: merged.network ?? defaultRenderOptions.network,
+    waitUntil: merged.waitUntil ?? defaultRenderOptions.waitUntil,
+    timeoutMs: merged.timeoutMs ?? defaultRenderOptions.timeoutMs,
+  };
+}
+
+function mergeRenderOptions(...inputs: Array<RenderOptionsInput | undefined>): RenderOptionsInput {
+  return inputs.reduce<RenderOptionsInput>((merged, next) => {
+    if (!next) {
+      return merged;
+    }
+
+    return {
+      ...merged,
+      ...next,
+      pdf: {
+        ...merged.pdf,
+        ...next.pdf,
+      },
+    };
+  }, {});
+}
+
+function frontmatterToRenderOptions(frontmatter: Record<string, unknown>): RenderOptionsInput {
+  return {
+    outputPath: readString(frontmatter.outputPath),
+    force: readBoolean(frontmatter.force),
+    rawHtml: readEnum(frontmatter.rawHtml, ["sanitize", "escape", "allow"]),
+    theme: readString(frontmatter.theme),
+    css: readStringArray(frontmatter.css),
+    pdf: readPdfOptions(frontmatter.pdf),
+    network: readEnum(frontmatter.network, ["offline", "allow"]),
+    waitUntil: readEnum(frontmatter.waitUntil, ["load", "domcontentloaded", "networkidle"]),
+    timeoutMs: readNumber(frontmatter.timeoutMs),
+  };
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function readBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function readStringArray(value: unknown): string[] | undefined {
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function readEnum<const Value extends string>(value: unknown, values: readonly Value[]): Value | undefined {
+  return typeof value === "string" && values.includes(value as Value) ? (value as Value) : undefined;
+}
+
+function readPdfOptions(value: unknown): Partial<PdfOptions> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const pdf = value as Record<string, unknown>;
+  return {
+    format: readEnum(pdf.format, ["A4", "Letter", "Legal"]),
+    printBackground: readBoolean(pdf.printBackground),
+  };
+}
+
+function resolvePaths(paths: string[], basePath: string): string[] {
+  return paths.map((path) => resolvePath(path, basePath));
+}
+
+function resolvePath(path: string, basePath: string): string {
+  return isAbsolute(path) ? path : resolve(basePath, path);
 }
 
 export async function renderMarkdownDocument(
@@ -121,8 +300,11 @@ function normalizeFrontmatter(data: Record<string, unknown>): Pick<RenderedMarkd
   return { title, author, metadata };
 }
 
-export function renderHtmlShell(document: RenderedMarkdownDocument): string {
+export function renderHtmlShell(document: RenderedMarkdownDocument, options: Pick<ResolvedRenderOptions, "css" | "theme"> = defaultRenderOptions): string {
   const title = document.title ?? "Marky document";
+  const stylesheets = options.css
+    .map((cssPath) => `  <link rel="stylesheet" href="${escapeHtml(pathToFileURL(cssPath).href)}">`)
+    .join("\n");
 
   return `<!doctype html>
 <html lang="en">
@@ -130,6 +312,7 @@ export function renderHtmlShell(document: RenderedMarkdownDocument): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
+${stylesheets}
   <style>
     :root {
       color: #1f2933;

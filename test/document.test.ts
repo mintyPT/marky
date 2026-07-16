@@ -72,9 +72,13 @@ title: Print Me
 # Body
 `);
 
-    const html = renderHtmlShell(document);
+    const html = renderHtmlShell(document, {
+      css: ["/project/theme/print.css"],
+      theme: "default",
+    });
 
     expect(html).toContain("<title>Print Me</title>");
+    expect(html).toContain('<link rel="stylesheet" href="file:///project/theme/print.css">');
     expect(html).toContain("@page");
     expect(html).toContain("@media print");
     expect(html).toContain("<main><h1>Body</h1></main>");
