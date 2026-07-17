@@ -954,7 +954,26 @@ function toBaseUrl(baseUrl: string): URL {
   return pathToFileURL(`${resolve(baseUrl)}/`);
 }
 
-export function renderHtmlShell(document: RenderedMarkdownDocument, options: Pick<ResolvedRenderOptions, "css" | "theme"> = defaultRenderOptions): string {
+type HtmlShellOptions = Pick<ResolvedRenderOptions, "css" | "theme"> &
+  Partial<Pick<ResolvedRenderOptions, "cover" | "toc" | "pagination" | "backPage">>;
+
+export function renderHtmlShell(document: RenderedMarkdownDocument, options: HtmlShellOptions = defaultRenderOptions): string {
+  const resolvedOptions = {
+    ...defaultRenderOptions,
+    ...options,
+  };
+
+  if (resolvedOptions.theme === "professional") {
+    return renderProfessionalHtmlShell(document, resolvedOptions);
+  }
+
+  return renderDefaultHtmlShell(document, resolvedOptions);
+}
+
+function renderDefaultHtmlShell(
+  document: RenderedMarkdownDocument,
+  options: Pick<ResolvedRenderOptions, "css" | "theme">,
+): string {
   const title = document.title ?? "Marky document";
   const stylesheets = options.css
     .map((cssPath) => `  <link rel="stylesheet" href="${escapeHtml(pathToFileURL(cssPath).href)}">`)
@@ -1016,6 +1035,65 @@ ${stylesheets}
 </head>
 <body>
   <main>${document.html}</main>
+</body>
+</html>`;
+}
+
+function renderProfessionalHtmlShell(
+  document: RenderedMarkdownDocument,
+  options: Pick<ResolvedRenderOptions, "css" | "cover" | "toc" | "pagination" | "backPage">,
+): string {
+  const title = document.title ?? "Marky document";
+  const stylesheets = options.css
+    .map((cssPath) => `  <link rel="stylesheet" href="${escapeHtml(pathToFileURL(cssPath).href)}">`)
+    .join("\n");
+  const featureState = JSON.stringify({
+    cover: options.cover !== false,
+    toc: options.toc !== false,
+    pagination: options.pagination !== false,
+    backPage: options.backPage !== false,
+  });
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+${stylesheets}
+  <style>
+    :root {
+      color: #172033;
+      background: #ffffff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    body {
+      margin: 0;
+      background: #ffffff;
+    }
+
+    .marky-professional-document {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px;
+    }
+
+    @page {
+      margin: 18mm;
+    }
+
+    @media print {
+      .marky-professional-document {
+        max-width: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body data-marky-professional-features="${escapeHtml(featureState)}">
+  <main class="marky-professional-document">${document.html}</main>
 </body>
 </html>`;
 }

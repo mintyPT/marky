@@ -84,6 +84,40 @@ title: Print Me
     expect(html).toContain("<main><h1>Body</h1></main>");
   });
 
+  it("keeps unknown themes on the default shell", async () => {
+    const document = await renderMarkdownDocument("# Body\n");
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "custom-theme",
+    });
+
+    expect(html).toContain("<main><h1>Body</h1></main>");
+    expect(html).not.toContain("marky-professional-document");
+  });
+
+  it("routes professional theme through the professional shell", async () => {
+    const document = await renderMarkdownDocument(`---
+title: Professional
+---
+
+# Body
+`);
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: {},
+      toc: false,
+      pagination: {},
+      backPage: false,
+    });
+
+    expect(html).toContain("<title>Professional</title>");
+    expect(html).toContain('class="marky-professional-document"');
+    expect(html).toContain("&quot;cover&quot;:true");
+    expect(html).toContain("&quot;toc&quot;:false");
+    expect(html).toContain("<h1>Body</h1>");
+  });
+
   it("resolves relative assets from an explicit base URL", async () => {
     const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
       baseUrl: "examples/project-build/input/docs",

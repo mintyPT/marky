@@ -363,7 +363,7 @@ Resolve logo paths according to their source: frontmatter relative to the Markdo
 ---
 
 ## MARKY-012 · Add professional theme shell routing
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-013, MARKY-016, MARKY-017, MARKY-019] | blocked_by: [MARKY-010]
 tags: [professional-pdf-theme]
 
@@ -388,6 +388,8 @@ Keep the current default shell unchanged. Route theme: professional through a ne
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:32:25Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:33:31Z · mauro.goncalo@gmail.com
 
 ---
 
