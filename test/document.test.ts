@@ -123,6 +123,27 @@ title: Print Me
     expect(html).not.toContain("marky-professional-document");
   });
 
+  it("scopes report-style body CSS to the professional shell", async () => {
+    const document = await renderMarkdownDocument("| A | B |\n| - | - |\n| C | D |\n\n> Quote\n\n```ts\nconst x = 1;\n```\n");
+    const professionalHtml = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: false,
+      pagination: false,
+      backPage: false,
+    });
+    const defaultHtml = renderHtmlShell(document, {
+      css: [],
+      theme: "default",
+    });
+
+    expect(professionalHtml).toContain(".marky-professional-document table");
+    expect(professionalHtml).toContain(".marky-professional-document blockquote");
+    expect(professionalHtml).toContain(".marky-professional-document pre");
+    expect(defaultHtml).not.toContain(".marky-professional-document table");
+  });
+
   it("routes professional theme through the professional shell", async () => {
     const document = await renderMarkdownDocument(`---
 title: Professional

@@ -1203,6 +1203,110 @@ ${stylesheets}
       padding: 48px;
     }
 
+    .marky-professional-document h1,
+    .marky-professional-document h2,
+    .marky-professional-document h3 {
+      color: #111827;
+      line-height: 1.18;
+      margin: 1.8em 0 0.55em;
+      break-after: avoid;
+    }
+
+    .marky-professional-document h1 {
+      font-size: 30px;
+    }
+
+    .marky-professional-document h2 {
+      font-size: 22px;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 6px;
+    }
+
+    .marky-professional-document h3 {
+      font-size: 17px;
+      color: #374151;
+    }
+
+    .marky-professional-document p,
+    .marky-professional-document li {
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .marky-professional-document a {
+      color: #1d4ed8;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .marky-professional-document ul,
+    .marky-professional-document ol {
+      padding-left: 24px;
+    }
+
+    .marky-professional-document blockquote {
+      margin: 24px 0;
+      padding: 12px 18px;
+      border-left: 4px solid #94a3b8;
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    .marky-professional-document table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 13px;
+    }
+
+    .marky-professional-document th,
+    .marky-professional-document td {
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .marky-professional-document th {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .marky-professional-document code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: #f3f4f6;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 0.92em;
+    }
+
+    .marky-professional-document pre {
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+      background: #111827;
+      color: #f9fafb;
+      padding: 14px;
+      border-radius: 6px;
+    }
+
+    .marky-professional-document pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .marky-professional-document img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .marky-professional-document hr {
+      border: 0;
+      border-top: 1px solid #d1d5db;
+      margin: 32px 0;
+      break-after: avoid;
+    }
+
     .marky-professional-cover {
       break-after: page;
       min-height: 88vh;

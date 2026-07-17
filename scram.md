@@ -583,7 +583,7 @@ When pagination is enabled, call Playwright PDF generation with displayHeaderFoo
 ---
 
 ## MARKY-019 · Style professional PDF body content
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-020, MARKY-021, MARKY-023] | blocked_by: [MARKY-012]
 tags: [professional-pdf-theme]
 
@@ -608,6 +608,8 @@ Add restrained report styling for typography, headings, paragraphs, links, lists
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:41:47Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:42:54Z · mauro.goncalo@gmail.com
 
 ---
 
