@@ -5,7 +5,7 @@ groups: [marky-render-slice, marky-document-pipeline, marky-project-build, marky
 ---
 
 ## MARKY-001 · Render one Markdown file to PDF end-to-end
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-002] | blocked_by: []
 tags: [marky-render-slice]
 
@@ -32,11 +32,13 @@ Replace the scaffold greeting behavior with a `renderMarkdownToPdf` workflow and
 
 ### History
 - created · 2026-07-16T21:25:56Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:41:05Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T21:52:04Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-002 · Build the unified Markdown document pipeline
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-003] | blocked_by: [MARKY-001]
 tags: [marky-document-pipeline]
 
@@ -63,11 +65,13 @@ Introduce a unified processor that parses Markdown, supports GitHub-flavored Mar
 
 ### History
 - created · 2026-07-16T21:26:20Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:53:03Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T21:58:15Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-003 · Add option resolution across defaults config frontmatter and explicit inputs
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-004] | blocked_by: [MARKY-002]
 tags: [marky-document-pipeline]
 
@@ -94,11 +98,13 @@ Create a central resolver for render options and build options. Use the preceden
 
 ### History
 - created · 2026-07-16T21:26:40Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T21:58:39Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:02:35Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-004 · Add Playwright rendering controls
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-005] | blocked_by: [MARKY-003]
 tags: [marky-document-pipeline]
 
@@ -125,11 +131,13 @@ Add a `pdf` option object that maps to stable Playwright PDF concerns such as fo
 
 ### History
 - created · 2026-07-16T21:26:41Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:03:08Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:09:42Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-005 · Add optional project config loading
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-006] | blocked_by: [MARKY-004]
 tags: [marky-project-build]
 
@@ -156,11 +164,13 @@ Support optional config files in JavaScript/ESM and JSON formats, with a search 
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:10:17Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:15:16Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-006 · Add build command and batch library API
-type: Task | status: Backlog | priority: High
+type: Task | status: Done | priority: High
 blocks: [MARKY-007] | blocked_by: [MARKY-005]
 tags: [marky-project-build]
 
@@ -187,11 +197,13 @@ Export `buildMarkdownPdfs` and add `marky build`. Discover inputs from configure
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:15:40Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:22:28Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-007 · Harden local asset and output path handling
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-008] | blocked_by: [MARKY-006]
 tags: [marky-project-build]
 
@@ -218,11 +230,13 @@ For file input, resolve relative Markdown assets from the Markdown file director
 
 ### History
 - created · 2026-07-16T21:27:06Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:23:01Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:25:52Z · mauro.goncalo@gmail.com
 
 ---
 
 ## MARKY-008 · Document and verify the public lib CLI contract
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-007]
 tags: [marky-docs-contract]
 
@@ -249,3 +263,5 @@ Update documentation to cover `marky render`, `marky build`, `renderMarkdownToPd
 
 ### History
 - created · 2026-07-16T21:27:15Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-16T22:26:21Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-16T22:28:44Z · mauro.goncalo@gmail.com

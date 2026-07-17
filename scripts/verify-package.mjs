@@ -18,6 +18,8 @@ const requiredFiles = [
   "LICENSE",
   "dist/index.js",
   "dist/index.d.ts",
+  "dist/cli/index.js",
+  "dist/cli/index.d.ts",
   ...binEntries,
 ];
 
@@ -35,6 +37,19 @@ for (const binPath of binEntries) {
   const mode = statSync(binPath).mode;
   if ((mode & 0o111) === 0) {
     fail(`${binPath} is not executable in the built output.`);
+  }
+}
+
+const publicExports = ["renderMarkdownToPdf", "buildMarkdownPdfs", "renderMarkdownDocument", "defineConfig"];
+const distIndex = readFileSync("dist/index.js", "utf8");
+const distTypes = readFileSync("dist/index.d.ts", "utf8");
+
+for (const exportName of publicExports) {
+  if (!distIndex.includes(exportName)) {
+    fail(`dist/index.js does not include public export ${exportName}.`);
+  }
+  if (!distTypes.includes(exportName)) {
+    fail(`dist/index.d.ts does not include public type for ${exportName}.`);
   }
 }
 

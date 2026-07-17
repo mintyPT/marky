@@ -1,10 +1,124 @@
-import { describe, expect, it } from "vitest";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { execa } from "execa";
+import { afterEach, describe, expect, it } from "vitest";
+
+const workspaces: string[] = [];
+
+async function createWorkspace(): Promise<string> {
+  const workspace = await mkdtemp(join(tmpdir(), "marky-cli-"));
+  workspaces.push(workspace);
+  return workspace;
+}
+
+afterEach(async () => {
+  await Promise.all(workspaces.splice(0).map((workspace) => rm(workspace, { recursive: true, force: true })));
+});
 
 describe("cli", () => {
-  it("prints a greeting", async () => {
-    const result = await execa("tsx", ["src/cli/index.ts", "greet", "World"]);
+  it("renders a Markdown file to the requested PDF path", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "out", "notes.pdf");
+    await writeFile(inputPath, "# Notes\n\nRendered from the CLI.\n");
 
-    expect(result.stdout).toBe("Hello, World!");
-  });
+    const result = await execa("tsx", ["src/cli/index.ts", "render", inputPath, outputPath]);
+    const pdf = await readFile(outputPath);
+
+    expect(result.stdout).toContain(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+    expect(pdf.byteLength).toBeGreaterThan(1_000);
+  }, 30_000);
+
+  it("passes the force flag through to the renderer", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "notes.pdf");
+    await writeFile(inputPath, "# Notes\n");
+    await writeFile(outputPath, "existing");
+
+    await execa("tsx", ["src/cli/index.ts", "render", inputPath, outputPath, "--force"]);
+    const pdf = await readFile(outputPath);
+
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
+
+  it("accepts stable Playwright rendering controls", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "notes.pdf");
+    await writeFile(inputPath, "# Notes\n");
+
+    await execa("tsx", [
+      "src/cli/index.ts",
+      "render",
+      inputPath,
+      outputPath,
+      "--pdf-format",
+      "Letter",
+      "--pdf-margin",
+      "8mm",
+      "--landscape",
+      "--scale",
+      "0.9",
+      "--no-print-background",
+      "--network",
+      "block",
+      "--wait-until",
+      "load",
+      "--no-wait-for-fonts",
+      "--timeout-ms",
+      "30000",
+    ]);
+    const pdf = await readFile(outputPath);
+
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
+
+  it("discovers config defaults for render", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(workspace, "notes.md");
+    const outputPath = join(workspace, "configured.pdf");
+    await writeFile(inputPath, "# Notes\n");
+    await writeFile(
+      join(workspace, "marky.config.json"),
+      JSON.stringify({
+        render: {
+          outputPath: "./configured.pdf",
+          pdf: { format: "Letter" },
+        },
+      }),
+    );
+
+    const result = await execa("tsx", [join(process.cwd(), "src/cli/index.ts"), "render", inputPath], { cwd: workspace });
+    const pdf = await readFile(outputPath);
+
+    expect(result.stdout).toContain(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 30_000);
+
+  it("builds configured Markdown inputs", async () => {
+    const workspace = await createWorkspace();
+    await writeFile(
+      join(workspace, "marky.config.json"),
+      JSON.stringify({
+        build: {
+          inputs: ["docs/**/*.md"],
+          rootDir: "docs",
+          outDir: "pdf",
+          concurrency: 1,
+        },
+      }),
+    );
+    await writeFile(join(workspace, "notes.md"), "# ignored\n");
+    await mkdir(join(workspace, "docs"), { recursive: true });
+    await writeFile(join(workspace, "docs", "index.md"), "# Home\n");
+
+    const result = await execa("tsx", [join(process.cwd(), "src/cli/index.ts"), "build"], { cwd: workspace });
+    const pdf = await readFile(join(workspace, "pdf", "index.pdf"));
+
+    expect(result.stdout).toContain("Built 1 PDF");
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  }, 45_000);
 });

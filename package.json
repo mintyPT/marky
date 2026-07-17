@@ -39,13 +39,25 @@
     "build": "tsup",
     "check": "tsc --noEmit",
     "dev": "tsx src/cli/index.ts",
-    "test": "vitest run",
+    "test": "vitest run test/config.test.ts test/document.test.ts test/errors.test.ts test/options.test.ts",
+    "test:integration": "vitest run test/index.test.ts test/cli.test.ts test/build.test.ts",
+    "test:all": "npm test && npm run test:integration",
     "pack:dry": "npm run build && npm pack --dry-run --cache .npm-cache",
     "pack:verify": "npm run build && mkdir -p .tmp && npm pack --dry-run --json --cache .npm-cache > .tmp/npm-pack.json && node scripts/verify-package.mjs .tmp/npm-pack.json",
-    "release:check": "npm run check && npm test && npm run pack:verify"
+    "release:check": "npm run check && npm run test:all && npm run pack:verify"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "fast-glob": "^3.3.3",
+    "gray-matter": "^4.0.3",
+    "playwright": "^1.61.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5"
   },
   "overrides": {
     "esbuild": "^0.28.1"
