@@ -1,0 +1,16 @@
+{
+  "render": {
+    "rawHtml": "sanitize",
+    "network": "block",
+    "pdf": {
+      "format": "Letter",
+      "printBackground": true
+    }
+  },
+  "build": {
+    "inputs": ["docs/**/*.md"],
+    "rootDir": "docs",
+    "outDir": "../output",
+    "concurrency": 1
+  }
+}

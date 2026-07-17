@@ -2,6 +2,32 @@
 
 Render Markdown documents to PDF from TypeScript or the command line.
 
+## What Marky Shows
+
+The checked-in examples under [`examples/`](examples/) show the practical results of using the CLI:
+
+- [`examples/single-file/input/meeting-notes.md`](examples/single-file/input/meeting-notes.md)
+  becomes [`examples/single-file/output/meeting-notes.pdf`](examples/single-file/output/meeting-notes.pdf)
+  with one `render` command.
+- [`examples/project-build/input/docs/`](examples/project-build/input/docs/) becomes a matching PDF
+  tree under [`examples/project-build/output/`](examples/project-build/output/) with one `build`
+  command.
+- [`examples/safety/input/safety-demo.md`](examples/safety/input/safety-demo.md) becomes
+  [`examples/safety/output/safety-demo.pdf`](examples/safety/output/safety-demo.pdf), demonstrating
+  sanitized raw HTML and blocked network rendering.
+
+Regenerate those outputs with:
+
+```bash
+npm run dev -- render examples/single-file/input/meeting-notes.md examples/single-file/output/meeting-notes.pdf --force
+npm run dev -- build --config examples/project-build/input/marky.config.json
+npm run dev -- render examples/safety/input/safety-demo.md examples/safety/output/safety-demo.pdf --force --network block
+```
+
+The useful before/after is visible in the folders: Markdown inputs stay easy to review, while the
+outputs are shareable PDFs with preserved project structure, GFM tables/task lists, frontmatter
+metadata, local assets, and reproducible rendering controls.
+
 ## Setup
 
 Use Node 20 or newer.
