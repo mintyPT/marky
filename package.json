@@ -1,6 +1,6 @@
 {
   "name": "@maurogoncalo/marky",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Render Markdown documents to PDF from TypeScript or the command line.",
   "type": "module",
   "license": "MIT",
