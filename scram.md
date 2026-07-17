@@ -743,7 +743,7 @@ Add tests that render professional HTML and assert cover markup, TOC links, body
 ---
 
 ## MARKY-024 · Add professional PDF integration test
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-018, MARKY-021]
 tags: [professional-pdf-theme]
 
@@ -768,3 +768,5 @@ Render the professional example to a real PDF with the existing integration test
 
 ### History
 - created · 2026-07-17T13:24:10Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:46:36Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:47:42Z · mauro.goncalo@gmail.com

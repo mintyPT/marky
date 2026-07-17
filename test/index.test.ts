@@ -90,4 +90,17 @@ pdf:
     expect(result.outputPath).toBe(outputPath);
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   }, 30_000);
+
+  it("renders the professional example to a real PDF", async () => {
+    const workspace = await createWorkspace();
+    const inputPath = join(process.cwd(), "examples", "professional", "input", "professional-report.md");
+    const outputPath = join(workspace, "professional-report.pdf");
+
+    const result = await renderMarkdownToPdf(inputPath, { outputPath, force: true });
+    const pdf = await readFile(outputPath);
+
+    expect(result.outputPath).toBe(outputPath);
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+    expect(pdf.byteLength).toBeGreaterThan(10_000);
+  }, 45_000);
 });
