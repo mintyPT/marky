@@ -328,6 +328,33 @@ title: Metadata Title
     expect(html).not.toContain('<section class="marky-professional-back-page"');
   });
 
+  it("covers professional HTML structure without full snapshots", async () => {
+    const document = await renderMarkdownDocument(`---
+title: Structure Test
+---
+
+# Body Heading
+## Section
+`);
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: { subtitle: "Subtitle" },
+      toc: {},
+      pagination: false,
+      backPage: { title: "Done", email: "done@example.com" },
+    });
+
+    expect(html).toContain('<section class="marky-professional-cover"');
+    expect(html).toContain("Subtitle");
+    expect(html).toContain('<nav class="marky-professional-toc"');
+    expect(html).toContain('<a href="#body-heading">Body Heading</a>');
+    expect(html).toContain('<main class="marky-professional-document"><h1 id="body-heading">Body Heading</h1>');
+    expect(html).toContain('<section class="marky-professional-back-page"');
+    expect(html).toContain("done@example.com");
+    expect(html).toContain(".marky-professional-document table");
+  });
+
   it("resolves relative assets from an explicit base URL", async () => {
     const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
       baseUrl: "examples/project-build/input/docs",

@@ -710,7 +710,7 @@ Add focused unit coverage for professional feature inputs, true/false/object nor
 ---
 
 ## MARKY-023 · Add unit tests for professional HTML output
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-013, MARKY-016, MARKY-017, MARKY-019]
 tags: [professional-pdf-theme]
 
@@ -737,6 +737,8 @@ Add tests that render professional HTML and assert cover markup, TOC links, body
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:45:49Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:46:30Z · mauro.goncalo@gmail.com
 
 ---
 
