@@ -4,3 +4,4 @@ coverage/
 .npm-cache/
 .tmp/
 *.log
+scram.md.lock
