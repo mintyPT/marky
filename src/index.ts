@@ -1148,6 +1148,7 @@ function renderProfessionalHtmlShell(
     backPage: options.backPage !== false,
   });
   const cover = options.cover === false ? "" : renderProfessionalCover(document, options.cover);
+  const toc = options.toc === false ? "" : renderProfessionalToc(document, options.toc);
 
   return `<!doctype html>
 <html lang="en">
@@ -1212,6 +1213,39 @@ ${stylesheets}
       text-transform: uppercase;
     }
 
+    .marky-professional-toc {
+      break-after: page;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px;
+    }
+
+    .marky-professional-toc__title {
+      margin: 0 0 28px;
+      font-size: 28px;
+      color: #111827;
+    }
+
+    .marky-professional-toc__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .marky-professional-toc__item {
+      margin: 10px 0;
+    }
+
+    .marky-professional-toc__item--depth-3 {
+      margin-left: 24px;
+      font-size: 14px;
+    }
+
+    .marky-professional-toc a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
     @page {
       margin: 18mm;
     }
@@ -1226,6 +1260,7 @@ ${stylesheets}
 </head>
 <body data-marky-professional-features="${escapeHtml(featureState)}">
   ${cover}
+  ${toc}
   <main class="marky-professional-document">${document.html}</main>
 </body>
 </html>`;
@@ -1247,6 +1282,29 @@ function renderProfessionalCover(document: RenderedMarkdownDocument, cover: Prof
     ${subtitle}
     ${meta ? `<div class="marky-professional-cover__meta">${meta}</div>` : ""}
   </section>`;
+}
+
+function renderProfessionalToc(document: RenderedMarkdownDocument, toc: ProfessionalTocOptions): string {
+  const maxDepth = Math.min(3, Math.max(1, toc.depth ?? 2));
+  const entries = document.headings.filter((heading) => heading.id && heading.depth <= maxDepth);
+  if (entries.length === 0) {
+    return "";
+  }
+
+  const items = entries
+    .map(
+      (heading) => `<li class="marky-professional-toc__item marky-professional-toc__item--depth-${heading.depth}">
+        <a href="#${escapeHtml(heading.id!)}">${escapeHtml(heading.text)}</a>
+      </li>`,
+    )
+    .join("\n");
+
+  return `<nav class="marky-professional-toc" aria-label="Table of contents">
+    <h1 class="marky-professional-toc__title">${escapeHtml(toc.title ?? "Contents")}</h1>
+    <ol class="marky-professional-toc__list">
+${items}
+    </ol>
+  </nav>`;
 }
 
 function escapeHtml(value: string): string {

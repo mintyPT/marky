@@ -209,6 +209,63 @@ title: Metadata Title
     expect(html).toContain('<h1 id="body">Body</h1>');
   });
 
+  it("renders a linked professional table of contents after the cover", async () => {
+    const document = await renderMarkdownDocument(`
+# Report
+## Findings
+### Detail
+#### Too deep
+`);
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: {},
+      toc: { title: "Contents", depth: 4 },
+      pagination: false,
+      backPage: false,
+    });
+
+    expect(html.indexOf('<section class="marky-professional-cover"')).toBeLessThan(
+      html.indexOf('<nav class="marky-professional-toc"'),
+    );
+    expect(html.indexOf('<nav class="marky-professional-toc"')).toBeLessThan(
+      html.indexOf('<main class="marky-professional-document"'),
+    );
+    expect(html).toContain('<a href="#report">Report</a>');
+    expect(html).toContain('<a href="#findings">Findings</a>');
+    expect(html).toContain('<a href="#detail">Detail</a>');
+    expect(html).not.toContain('<a href="#too-deep">Too deep</a>');
+  });
+
+  it("uses depth 2 by default and omits disabled professional TOC", async () => {
+    const document = await renderMarkdownDocument(`
+# Report
+## Findings
+### Detail
+`);
+    const defaultHtml = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: {},
+      pagination: false,
+      backPage: false,
+    });
+    const disabledHtml = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: false,
+      pagination: false,
+      backPage: false,
+    });
+
+    expect(defaultHtml).toContain('<a href="#report">Report</a>');
+    expect(defaultHtml).toContain('<a href="#findings">Findings</a>');
+    expect(defaultHtml).not.toContain('<a href="#detail">Detail</a>');
+    expect(disabledHtml).not.toContain('<nav class="marky-professional-toc"');
+  });
+
   it("resolves relative assets from an explicit base URL", async () => {
     const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
       baseUrl: "examples/project-build/input/docs",

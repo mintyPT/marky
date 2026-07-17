@@ -488,7 +488,7 @@ Add a rehype-based slugging step, either using a small dependency or a focused l
 ---
 
 ## MARKY-016 · Render a linked professional table of contents
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-020, MARKY-021, MARKY-023] | blocked_by: [MARKY-012, MARKY-014, MARKY-015]
 tags: [professional-pdf-theme]
 
@@ -514,6 +514,8 @@ Render a TOC after the cover when enabled. Generate entries from main Markdown h
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:38:13Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:39:16Z · mauro.goncalo@gmail.com
 
 ---
 
