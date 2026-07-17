@@ -520,7 +520,7 @@ Render a TOC after the cover when enabled. Generate entries from main Markdown h
 ---
 
 ## MARKY-017 · Render a structured professional back page
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-020, MARKY-021, MARKY-023] | blocked_by: [MARKY-011, MARKY-012]
 tags: [professional-pdf-theme]
 
@@ -545,6 +545,8 @@ Render a final page when backPage is enabled. Support structured plain-text fiel
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:39:21Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:40:23Z · mauro.goncalo@gmail.com
 
 ---
 

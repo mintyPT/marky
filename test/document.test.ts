@@ -266,6 +266,47 @@ title: Metadata Title
     expect(disabledHtml).not.toContain('<nav class="marky-professional-toc"');
   });
 
+  it("renders a structured professional back page after the body", async () => {
+    const document = await renderMarkdownDocument("# Body\n");
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: false,
+      pagination: false,
+      backPage: {
+        title: "Thank you",
+        text: "Contact <strong>sales</strong>",
+        website: "https://example.com",
+        email: "hello@example.com",
+        logo: "file:///project/back-logo.svg",
+      },
+    });
+
+    expect(html.indexOf('<main class="marky-professional-document"')).toBeLessThan(
+      html.indexOf('<section class="marky-professional-back-page"'),
+    );
+    expect(html).toContain("Thank you");
+    expect(html).toContain("Contact &lt;strong&gt;sales&lt;/strong&gt;");
+    expect(html).toContain("https://example.com");
+    expect(html).toContain("hello@example.com");
+    expect(html).toContain('src="file:///project/back-logo.svg"');
+  });
+
+  it("omits the professional back page when disabled", async () => {
+    const document = await renderMarkdownDocument("# Body\n");
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: false,
+      pagination: false,
+      backPage: false,
+    });
+
+    expect(html).not.toContain('<section class="marky-professional-back-page"');
+  });
+
   it("resolves relative assets from an explicit base URL", async () => {
     const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
       baseUrl: "examples/project-build/input/docs",

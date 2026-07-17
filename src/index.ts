@@ -1149,6 +1149,7 @@ function renderProfessionalHtmlShell(
   });
   const cover = options.cover === false ? "" : renderProfessionalCover(document, options.cover);
   const toc = options.toc === false ? "" : renderProfessionalToc(document, options.toc);
+  const backPage = options.backPage === false ? "" : renderProfessionalBackPage(options.backPage);
 
   return `<!doctype html>
 <html lang="en">
@@ -1246,6 +1247,46 @@ ${stylesheets}
       text-decoration: none;
     }
 
+    .marky-professional-back-page {
+      break-before: page;
+      min-height: 82vh;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      color: #1f2937;
+    }
+
+    .marky-professional-back-page__logo {
+      max-width: 160px;
+      max-height: 80px;
+      object-fit: contain;
+      margin-bottom: 24px;
+    }
+
+    .marky-professional-back-page__title {
+      margin: 0;
+      font-size: 30px;
+      color: #111827;
+    }
+
+    .marky-professional-back-page__text {
+      margin: 0;
+      max-width: 620px;
+      white-space: pre-line;
+      color: #4b5563;
+    }
+
+    .marky-professional-back-page__contact {
+      margin-top: 24px;
+      display: grid;
+      gap: 6px;
+      color: #1d4ed8;
+    }
+
     @page {
       margin: 18mm;
     }
@@ -1262,6 +1303,7 @@ ${stylesheets}
   ${cover}
   ${toc}
   <main class="marky-professional-document">${document.html}</main>
+  ${backPage}
 </body>
 </html>`;
 }
@@ -1305,6 +1347,29 @@ function renderProfessionalToc(document: RenderedMarkdownDocument, toc: Professi
 ${items}
     </ol>
   </nav>`;
+}
+
+function renderProfessionalBackPage(backPage: ProfessionalBackPageOptions): string {
+  const logo = backPage.logo
+    ? `<img class="marky-professional-back-page__logo" src="${escapeHtml(backPage.logo)}" alt="">`
+    : "";
+  const title = backPage.title
+    ? `<h1 class="marky-professional-back-page__title">${escapeHtml(backPage.title)}</h1>`
+    : "";
+  const text = backPage.text ? `<p class="marky-professional-back-page__text">${escapeHtml(backPage.text)}</p>` : "";
+  const contact = [
+    backPage.website ? `<span>${escapeHtml(backPage.website)}</span>` : "",
+    backPage.email ? `<span>${escapeHtml(backPage.email)}</span>` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `<section class="marky-professional-back-page" aria-label="Back page">
+    ${logo}
+    ${title}
+    ${text}
+    ${contact ? `<div class="marky-professional-back-page__contact">${contact}</div>` : ""}
+  </section>`;
 }
 
 function escapeHtml(value: string): string {
