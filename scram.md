@@ -331,7 +331,7 @@ Resolve input precedence using the existing order: explicit options over frontma
 ---
 
 ## MARKY-011 · Resolve cover and back-page logo paths
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-017, MARKY-022] | blocked_by: [MARKY-009]
 tags: [professional-pdf-theme]
 
@@ -357,6 +357,8 @@ Resolve logo paths according to their source: frontmatter relative to the Markdo
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:29:18Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:32:12Z · mauro.goncalo@gmail.com
 
 ---
 

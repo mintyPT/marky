@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { pathToFileURL } from "node:url";
 import { resolveRenderOptions } from "../src/index.js";
 
 describe("resolveRenderOptions", () => {
@@ -133,7 +134,7 @@ describe("resolveRenderOptions", () => {
       text: "Thanks for reading.",
       website: "https://example.com",
       email: "hello@example.com",
-      logo: "./explicit-logo.svg",
+      logo: pathToFileURL(`${process.cwd()}/explicit-logo.svg`).href,
     });
   });
 
@@ -176,5 +177,29 @@ describe("resolveRenderOptions", () => {
     expect(defaultOptions.backPage).toBe(false);
     expect(unknownThemeOptions.cover).toEqual({});
     expect(unknownThemeOptions.toc).toBe(false);
+  });
+
+  it("resolves professional logo paths from their source layer", () => {
+    const options = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      configPath: "/project/config/marky.config.json",
+      config: {
+        cover: { logo: "./brand/config.svg" },
+        backPage: { logo: "./brand/config-back.svg" },
+      },
+      frontmatter: {
+        cover: { logo: "./assets/frontmatter.svg" },
+      },
+      explicit: {
+        backPage: { logo: "./explicit-back.svg" },
+      },
+    });
+
+    expect(options.cover).toEqual({
+      logo: "file:///project/docs/assets/frontmatter.svg",
+    });
+    expect(options.backPage).toEqual({
+      logo: pathToFileURL(`${process.cwd()}/explicit-back.svg`).href,
+    });
   });
 });

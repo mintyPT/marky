@@ -479,8 +479,12 @@ export function normalizeRenderError(error: unknown): MarkyRenderError {
 
 export function resolveRenderOptions(input: ResolveRenderOptionsInput): ResolvedRenderOptions {
   const inputPath = resolve(input.inputPath);
-  const frontmatter = frontmatterToRenderOptions(input.frontmatter ?? {});
-  const merged = mergeRenderOptions(input.config, frontmatter, input.explicit);
+  const configBasePath = dirname(resolve(input.configPath ?? inputPath));
+  const frontmatterBasePath = dirname(inputPath);
+  const frontmatter = resolveProfessionalLogoInputs(frontmatterToRenderOptions(input.frontmatter ?? {}), frontmatterBasePath) ?? {};
+  const config = resolveProfessionalLogoInputs(input.config, configBasePath);
+  const explicit = resolveProfessionalLogoInputs(input.explicit, process.cwd());
+  const merged = mergeRenderOptions(config, frontmatter, explicit);
   const outputPath = resolveOutputPath(input, frontmatter);
   const theme = merged.theme ?? defaultRenderOptions.theme;
   const professionalDefaultsEnabled = theme === "professional";
@@ -492,8 +496,8 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
     rawHtml: merged.rawHtml ?? defaultRenderOptions.rawHtml,
     theme,
     css: [
-      ...resolvePaths(input.config?.css ?? [], dirname(resolve(input.configPath ?? inputPath))),
-      ...resolvePaths(frontmatter.css ?? [], dirname(inputPath)),
+      ...resolvePaths(input.config?.css ?? [], configBasePath),
+      ...resolvePaths(frontmatter.css ?? [], frontmatterBasePath),
       ...resolvePaths(input.explicit?.css ?? [], process.cwd()),
     ],
     pdf: {
@@ -512,6 +516,49 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
     waitForFonts: merged.waitForFonts ?? defaultRenderOptions.waitForFonts,
     timeoutMs: merged.timeoutMs ?? defaultRenderOptions.timeoutMs,
   };
+}
+
+function resolveProfessionalLogoInputs(
+  options: RenderOptionsInput | undefined,
+  basePath: string,
+): RenderOptionsInput | undefined {
+  if (!options) {
+    return undefined;
+  }
+
+  const resolved: RenderOptionsInput = {
+    ...options,
+  };
+  if (options.cover !== undefined) {
+    resolved.cover = resolveProfessionalLogoInput(options.cover, basePath);
+  }
+  if (options.backPage !== undefined) {
+    resolved.backPage = resolveProfessionalLogoInput(options.backPage, basePath);
+  }
+
+  return resolved;
+}
+
+function resolveProfessionalLogoInput<Options extends { logo?: string }>(
+  input: ProfessionalFeatureInput<Options> | undefined,
+  basePath: string,
+): ProfessionalFeatureInput<Options> | undefined {
+  if (!input || typeof input === "boolean" || !input.logo) {
+    return input;
+  }
+
+  return {
+    ...input,
+    logo: resolveLogoUrl(input.logo, basePath),
+  };
+}
+
+function resolveLogoUrl(value: string, basePath: string): string {
+  if (!isRelativeAssetUrl(value)) {
+    return value;
+  }
+
+  return constrainAssetUrl(value, basePath).href;
 }
 
 function normalizeProfessionalFeature<Options extends object>(
