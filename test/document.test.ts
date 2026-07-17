@@ -85,12 +85,12 @@ title: Print Me
   });
 
   it("resolves relative assets from an explicit base URL", async () => {
-    const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.png)", {
-      baseUrl: "/project/docs",
+    const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
+      baseUrl: "examples/project-build/input/docs",
     });
 
-    expect(document.html).toContain('href="file:///project/docs/guide/index.html"');
-    expect(document.html).toContain('src="file:///project/docs/assets/logo.png"');
+    expect(document.html).toContain(`href="file://${process.cwd()}/examples/project-build/input/docs/guide/index.html"`);
+    expect(document.html).toContain('src="data:image/svg+xml;base64,');
   });
 
   it("rejects relative assets without a base URL or outside the base", async () => {

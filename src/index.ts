@@ -638,7 +638,7 @@ export async function renderMarkdownDocument(
   const { title, author, metadata } = normalizeFrontmatter(parsed.data);
 
   return {
-    html: resolveDocumentAssetUrls(String(file), options.baseUrl),
+    html: await resolveDocumentAssetUrls(String(file), options.baseUrl),
     title,
     author,
     metadata,
@@ -679,8 +679,22 @@ function normalizeFrontmatter(data: Record<string, unknown>): Pick<RenderedMarkd
   return { title, author, metadata };
 }
 
-function resolveDocumentAssetUrls(html: string, baseUrl: string | undefined): string {
-  return html.replace(/\b(src|href)="([^"]+)"/g, (_match, attribute: string, value: string) => {
+async function resolveDocumentAssetUrls(html: string, baseUrl: string | undefined): Promise<string> {
+  let resolvedHtml = "";
+  let lastIndex = 0;
+  const attributePattern = /\b(src|href)="([^"]+)"/g;
+
+  for (const match of html.matchAll(attributePattern)) {
+    const [fullMatch, attribute, value] = match;
+    resolvedHtml += html.slice(lastIndex, match.index);
+    resolvedHtml += await resolveDocumentAssetAttribute(attribute, value, baseUrl);
+    lastIndex = match.index + fullMatch.length;
+  }
+
+  return resolvedHtml + html.slice(lastIndex);
+}
+
+async function resolveDocumentAssetAttribute(attribute: string, value: string, baseUrl: string | undefined): Promise<string> {
     if (!isRelativeAssetUrl(value)) {
       return `${attribute}="${value}"`;
     }
@@ -692,16 +706,28 @@ function resolveDocumentAssetUrls(html: string, baseUrl: string | undefined): st
       );
     }
 
-    const resolved = resolveAssetUrl(value, baseUrl);
+    const resolved = await resolveAssetUrl(value, baseUrl, { inlineLocalFile: attribute === "src" });
     return `${attribute}="${escapeHtml(resolved)}"`;
-  });
+}
+
+async function resolveAssetUrl(
+  value: string,
+  baseUrl: string,
+  options: { inlineLocalFile: boolean },
+): Promise<string> {
+  const resolved = constrainAssetUrl(value, baseUrl);
+  if (options.inlineLocalFile && resolved.protocol === "file:") {
+    return fileUrlToDataUrl(resolved);
+  }
+
+  return resolved.href;
 }
 
 function isRelativeAssetUrl(value: string): boolean {
   return !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(value);
 }
 
-function resolveAssetUrl(value: string, baseUrl: string): string {
+function constrainAssetUrl(value: string, baseUrl: string): URL {
   const base = toBaseUrl(baseUrl);
   const resolved = new URL(value, base);
 
@@ -717,7 +743,31 @@ function resolveAssetUrl(value: string, baseUrl: string): string {
     }
   }
 
-  return resolved.href;
+  return resolved;
+}
+
+async function fileUrlToDataUrl(fileUrl: URL): Promise<string> {
+  const filePath = fileURLToPath(fileUrl);
+  const file = await readFile(filePath);
+  return `data:${mimeTypeForPath(filePath)};base64,${file.toString("base64")}`;
+}
+
+function mimeTypeForPath(filePath: string): string {
+  switch (extname(filePath).toLowerCase()) {
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    default:
+      return "application/octet-stream";
+  }
 }
 
 function toBaseUrl(baseUrl: string): URL {
