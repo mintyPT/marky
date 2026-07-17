@@ -179,6 +179,37 @@ describe("resolveRenderOptions", () => {
     expect(unknownThemeOptions.toc).toBe(false);
   });
 
+  it("normalizes true and false for every professional feature", () => {
+    const enabled = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      explicit: {
+        cover: true,
+        toc: true,
+        pagination: true,
+        backPage: true,
+      },
+    });
+    const disabled = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      explicit: {
+        theme: "professional",
+        cover: false,
+        toc: false,
+        pagination: false,
+        backPage: false,
+      },
+    });
+
+    expect(enabled.cover).toEqual({});
+    expect(enabled.toc).toEqual({});
+    expect(enabled.pagination).toEqual({});
+    expect(enabled.backPage).toEqual({});
+    expect(disabled.cover).toBe(false);
+    expect(disabled.toc).toBe(false);
+    expect(disabled.pagination).toBe(false);
+    expect(disabled.backPage).toBe(false);
+  });
+
   it("resolves professional logo paths from their source layer", () => {
     const options = resolveRenderOptions({
       inputPath: "/project/docs/report.md",

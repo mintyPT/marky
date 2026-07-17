@@ -674,7 +674,7 @@ Add a focused professional example showing theme: professional with cover, TOC, 
 ---
 
 ## MARKY-022 · Add unit tests for professional feature resolution
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-010, MARKY-011]
 tags: [professional-pdf-theme]
 
@@ -700,6 +700,8 @@ Add focused unit coverage for professional feature inputs, true/false/object nor
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:43:03Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:43:41Z · mauro.goncalo@gmail.com
 
 ---
 
