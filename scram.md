@@ -614,7 +614,7 @@ Add restrained report styling for typography, headings, paragraphs, links, lists
 ---
 
 ## MARKY-020 · Document professional PDF usage
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [] | blocked_by: [MARKY-013, MARKY-016, MARKY-017, MARKY-018, MARKY-019]
 tags: [professional-pdf-theme]
 
@@ -640,6 +640,8 @@ Document theme: professional for CLI, config, frontmatter, and API usage. Includ
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:44:36Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:45:44Z · mauro.goncalo@gmail.com
 
 ---
 

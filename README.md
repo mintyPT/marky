@@ -15,6 +15,9 @@ The checked-in examples under [`examples/`](examples/) show the practical result
 - [`examples/safety/input/safety-demo.md`](examples/safety/input/safety-demo.md) becomes
   [`examples/safety/output/safety-demo.pdf`](examples/safety/output/safety-demo.pdf), demonstrating
   sanitized raw HTML and blocked network rendering.
+- [`examples/professional/input/professional-report.md`](examples/professional/input/professional-report.md)
+  becomes [`examples/professional/output/professional-report.pdf`](examples/professional/output/professional-report.pdf),
+  demonstrating the professional theme with a cover, contents, pagination, and back page.
 
 Regenerate those outputs with:
 
@@ -22,6 +25,7 @@ Regenerate those outputs with:
 npm run dev -- render examples/single-file/input/meeting-notes.md examples/single-file/output/meeting-notes.pdf --force
 npm run dev -- build --config examples/project-build/input/marky.config.json
 npm run dev -- render examples/safety/input/safety-demo.md examples/safety/output/safety-demo.pdf --force --network block
+npm run dev -- render examples/professional/input/professional-report.md examples/professional/output/professional-report.pdf --force
 ```
 
 The useful before/after is visible in the folders: Markdown inputs stay easy to review, while the
@@ -172,6 +176,70 @@ are blocked when `network` is `block`.
 The default render policy allows network access because many documents reference remote images,
 fonts, or styles. Use `network: "block"` for deterministic local builds.
 
+## Professional Theme
+
+Set `theme: "professional"` to render a report-style PDF shell. It enables a generated cover page,
+table of contents, pagination footer, and back page by default. Set any generated feature to `false`
+to disable it.
+
+Frontmatter example:
+
+```md
+---
+title: Market Readiness Report
+author: Marky Consulting
+theme: professional
+cover:
+  subtitle: Launch assessment
+  date: July 2026
+  logo: ./assets/logo.svg
+toc:
+  title: Contents
+  depth: 3
+pagination: true
+backPage:
+  title: Ready for review
+  text: Generated from Markdown with Marky.
+  website: https://example.com
+  email: reports@example.com
+  logo: ./assets/logo.svg
+---
+```
+
+Config example:
+
+```json
+{
+  "render": {
+    "theme": "professional",
+    "cover": { "subtitle": "Quarterly report", "logo": "./assets/logo.svg" },
+    "toc": { "depth": 3 },
+    "pagination": true,
+    "backPage": { "title": "Contact", "email": "reports@example.com" }
+  }
+}
+```
+
+API example:
+
+```ts
+await renderMarkdownToPdf("./report.md", {
+  theme: "professional",
+  cover: { title: "Board Report" },
+  toc: { depth: 2 },
+  pagination: true,
+  backPage: false,
+  force: true,
+});
+```
+
+Professional feature paths follow the same source rule as other Marky inputs: frontmatter logo paths
+resolve from the Markdown file, config logo paths resolve from the config file, and explicit API logo
+paths resolve from the current working directory.
+
+Professional v1 does not include a glossary, raw HTML templates for generated pages, or TOC page
+numbers. The table of contents links to headings but deliberately does not promise page numbers.
+
 Supported v1 render options:
 
 - `outputPath`: PDF path to write.
@@ -180,6 +248,10 @@ Supported v1 render options:
 - `theme`: built-in theme name.
 - `css`: additional CSS file paths.
 - `pdf`: PDF options, including `format`, `margin`, `landscape`, `scale`, and `printBackground`.
+- `cover`: professional cover page options, `true`, or `false`.
+- `toc`: professional table of contents options, `true`, or `false`.
+- `pagination`: professional pagination footer options, `true`, or `false`.
+- `backPage`: professional back-page options, `true`, or `false`.
 - `network`: `allow` or `block`.
 - `waitUntil`: page readiness state for PDF capture.
 - `waitForFonts`: wait for document fonts before PDF capture.
