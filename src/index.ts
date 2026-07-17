@@ -830,7 +830,7 @@ function buildMarkdownProcessor(rawHtml: RawHtmlMode, headings: MarkdownHeading[
   const processor = unified().use(remarkParse).use(remarkGfm);
 
   if (rawHtml === "escape") {
-    return processor.use(remarkRehype).use(collectHeadingMetadata(headings)).use(rehypeStringify);
+    return processor.use(remarkRehype).use(addHeadingSlugs()).use(collectHeadingMetadata(headings)).use(rehypeStringify);
   }
 
   processor.use(remarkRehype, { allowDangerousHtml: true }).use(rehypeRaw);
@@ -839,7 +839,38 @@ function buildMarkdownProcessor(rawHtml: RawHtmlMode, headings: MarkdownHeading[
     processor.use(rehypeSanitize);
   }
 
-  return processor.use(collectHeadingMetadata(headings)).use(rehypeStringify);
+  return processor.use(addHeadingSlugs()).use(collectHeadingMetadata(headings)).use(rehypeStringify);
+}
+
+function addHeadingSlugs() {
+  return () => (tree: unknown) => {
+    const slugCounts = new Map<string, number>();
+
+    visitTree(tree, (node) => {
+      if (node.type !== "element" || typeof node.tagName !== "string" || !/^h[1-6]$/.test(node.tagName)) {
+        return;
+      }
+
+      const properties = (node.properties ??= {});
+      if (typeof properties.id === "string" && properties.id.length > 0) {
+        return;
+      }
+
+      const baseSlug = slugifyHeading(textContent(node)) || "section";
+      const count = (slugCounts.get(baseSlug) ?? 0) + 1;
+      slugCounts.set(baseSlug, count);
+      properties.id = count === 1 ? baseSlug : `${baseSlug}-${count}`;
+    });
+  };
+}
+
+function slugifyHeading(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function collectHeadingMetadata(headings: MarkdownHeading[]) {

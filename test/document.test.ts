@@ -41,7 +41,7 @@ draft: true
       theme: "report",
       draft: true,
     });
-    expect(document.html).toContain("<h1>Body</h1>");
+    expect(document.html).toContain('<h1 id="body">Body</h1>');
     expect(document.html).not.toContain("Quarterly Notes");
   });
 
@@ -55,10 +55,22 @@ draft: true
 `);
 
     expect(document.headings).toEqual([
-      { text: "Report", depth: 1, id: undefined },
-      { text: "Findings", depth: 2, id: undefined },
-      { text: "Next steps", depth: 3, id: undefined },
+      { text: "Report", depth: 1, id: "report" },
+      { text: "Findings", depth: 2, id: "findings" },
+      { text: "Next steps", depth: 3, id: "next-steps" },
     ]);
+    expect(document.html).toContain('<h1 id="report">Report</h1>');
+  });
+
+  it("generates deterministic slugs for repeated headings", async () => {
+    const document = await renderMarkdownDocument(`
+## API
+## API
+## API!
+`);
+
+    expect(document.headings.map((heading) => heading.id)).toEqual(["api", "api-2", "api-3"]);
+    expect(document.html).toContain('<h2 id="api-2">API</h2>');
   });
 
   it("sanitizes raw HTML by default", async () => {
@@ -97,7 +109,7 @@ title: Print Me
     expect(html).toContain('<link rel="stylesheet" href="file:///project/theme/print.css">');
     expect(html).toContain("@page");
     expect(html).toContain("@media print");
-    expect(html).toContain("<main><h1>Body</h1></main>");
+    expect(html).toContain('<main><h1 id="body">Body</h1></main>');
   });
 
   it("keeps unknown themes on the default shell", async () => {
@@ -107,7 +119,7 @@ title: Print Me
       theme: "custom-theme",
     });
 
-    expect(html).toContain("<main><h1>Body</h1></main>");
+    expect(html).toContain('<main><h1 id="body">Body</h1></main>');
     expect(html).not.toContain("marky-professional-document");
   });
 
@@ -131,8 +143,8 @@ title: Professional
     expect(html).toContain('class="marky-professional-document"');
     expect(html).toContain("&quot;cover&quot;:true");
     expect(html).toContain("&quot;toc&quot;:false");
-    expect(html).toContain("<h1>Body</h1>");
-    expect(document.headings).toEqual([{ text: "Body", depth: 1, id: undefined }]);
+    expect(html).toContain('<h1 id="body">Body</h1>');
+    expect(document.headings).toEqual([{ text: "Body", depth: 1, id: "body" }]);
   });
 
   it("renders a professional cover before the body when enabled", async () => {
@@ -162,7 +174,7 @@ Content
     expect(html).toContain("Executive report");
     expect(html).toContain("Ada · 2026-07-17");
     expect(html).toContain('src="file:///project/logo.svg"');
-    expect(html).toContain("<h1>Body Title</h1>");
+    expect(html).toContain('<h1 id="body-title">Body Title</h1>');
   });
 
   it("uses document title then first H1 as professional cover fallbacks", async () => {
@@ -194,7 +206,7 @@ title: Metadata Title
     });
 
     expect(html).not.toContain('<section class="marky-professional-cover"');
-    expect(html).toContain("<h1>Body</h1>");
+    expect(html).toContain('<h1 id="body">Body</h1>');
   });
 
   it("resolves relative assets from an explicit base URL", async () => {

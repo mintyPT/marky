@@ -457,7 +457,7 @@ Collect headings from the main Markdown content during document rendering. Inclu
 ---
 
 ## MARKY-015 · Add rehype heading slugs for professional TOC links
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-016] | blocked_by: [MARKY-014]
 tags: [professional-pdf-theme]
 
@@ -482,6 +482,8 @@ Add a rehype-based slugging step, either using a small dependency or a focused l
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:36:45Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:38:07Z · mauro.goncalo@gmail.com
 
 ---
 
