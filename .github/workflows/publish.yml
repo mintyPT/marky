@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       confirm-package:
-        description: 'Type "marky" to confirm npm publication.'
+        description: 'Type "@maurogoncalo/marky" to confirm npm publication.'
         required: true
         type: string
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
@@ -20,39 +20,74 @@ jobs:
   publish:
     name: Publish package
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm-package == 'marky'
+    if: github.event.inputs.confirm-package == '@maurogoncalo/marky'
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24.x
           registry-url: https://registry.npmjs.org
+          scope: "@maurogoncalo"
           package-manager-cache: false
+
+      - name: Use latest npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify package contents
-        run: npm run release:check
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
-      - name: Check whether this version is already published
-        id: published
+      - name: Prepare release version
+        id: release
         shell: bash
         run: |
           package_name="$(node -p "require('./package.json').name")"
-          package_version="$(node -p "require('./package.json').version")"
+          current_version="$(node -p "require('./package.json').version")"
+          package_version="${current_version}"
 
-          if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "${package_name}@${package_version} is already published; skipping npm publish."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+          while npm view "${package_name}@${package_version}" version >/dev/null 2>&1 || git rev-parse "v${package_version}" >/dev/null 2>&1; do
+            package_version="$(node -e "const [major, minor, patch] = process.argv[1].split('.').map(Number); console.log([major, minor, patch + 1].join('.'))" "${package_version}")"
+          done
+
+          if [ "${package_version}" != "${current_version}" ]; then
+            npm version "${package_version}" --no-git-tag-version
+          fi
+
+          echo "package-name=${package_name}" >> "$GITHUB_OUTPUT"
+          echo "package-version=${package_version}" >> "$GITHUB_OUTPUT"
+          echo "release-tag=v${package_version}" >> "$GITHUB_OUTPUT"
+          echo "Prepared ${package_name}@${package_version}."
+
+      - name: Verify package contents
+        run: npm run release:check
+
+      - name: Prepare release commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if ! git diff --quiet -- package.json package-lock.json; then
+            git add package.json package-lock.json
+            git commit -m "chore: release ${{ steps.release.outputs.release-tag }}"
+          fi
+
+          if ! git rev-parse "${{ steps.release.outputs.release-tag }}" >/dev/null 2>&1; then
+            git tag -a "${{ steps.release.outputs.release-tag }}" -m "${{ steps.release.outputs.release-tag }}"
           fi
 
       - name: Publish to npm
-        if: steps.published.outputs.exists == 'false'
         run: npm publish --access public --provenance
+
+      - name: Push release commit and tag
+        shell: bash
+        run: |
+          git push origin HEAD:${{ github.ref_name }} --follow-tags

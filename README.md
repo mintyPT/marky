@@ -37,6 +37,13 @@ metadata, local assets, and reproducible rendering controls.
 Use Node 20 or newer.
 
 ```bash
+npm install @maurogoncalo/marky
+npx @maurogoncalo/marky render ./notes.md
+```
+
+For local development:
+
+```bash
 npm install
 npm test
 npx playwright install chromium
@@ -109,7 +116,7 @@ type declarations, README, and license.
 ## Library
 
 ```ts
-import { buildMarkdownPdfs, renderMarkdownDocument, renderMarkdownToPdf } from "marky";
+import { buildMarkdownPdfs, renderMarkdownDocument, renderMarkdownToPdf } from "@maurogoncalo/marky";
 
 const result = await renderMarkdownToPdf("./notes.md", {
   outputPath: "./notes.pdf",
@@ -145,7 +152,7 @@ console.log(build.successes.length, build.failures.length);
 Config files can be JSON or JavaScript/ESM:
 
 ```js
-import { defineConfig } from "marky";
+import { defineConfig } from "@maurogoncalo/marky";
 
 export default defineConfig({
   render: {
@@ -259,3 +266,61 @@ Supported v1 render options:
 
 When config, frontmatter, and explicit options overlap, Marky resolves them as
 explicit options over frontmatter, frontmatter over config, and config over defaults.
+
+## Package Release
+
+The npm package is prepared as `@maurogoncalo/marky` with MIT licensing, public npm access,
+provenance-enabled publishing, a `marky` binary, ESM library exports, and TypeScript declarations.
+The unscoped `marky` package name is already occupied on npm, so install and import examples use the
+scoped package while CLI commands stay `marky`.
+
+Before publishing, run the local release check:
+
+```bash
+npm run release:check
+```
+
+This runs type-checking, unit and integration tests, a production build, and a package dry-run
+verification that checks the built CLI, library entry points, declaration files, README, and license.
+To inspect npm's packed file list without the full check:
+
+```bash
+npm run pack:dry
+```
+
+Publishing is intentionally manual. See [`RELEASE.md`](./RELEASE.md) for the confirmation checklist
+and the GitHub Actions workflow steps. Do not publish from routine CI.
+
+## Release
+
+CI runs on pushes to `main` and on pull requests across Node 20, 22, and 24. Each run installs
+dependencies, typechecks, builds, runs tests, and verifies the npm package contents.
+
+Publishing to npm is handled by the `Publish to npm` GitHub Actions workflow. The publish workflow
+checks out `main`, bumps `package.json` and `package-lock.json` to the next unused patch version when
+the committed version already exists on npm or already has a git tag, runs `npm run release:check`,
+commits and tags that release version, and publishes it with provenance. It is manually dispatched
+and requires the operator to confirm the package name before publishing. The workflow uses npm
+trusted publishing with GitHub Actions OIDC, so npm must be configured with a trusted publisher for:
+
+- Package: `@maurogoncalo/marky`
+- Repository: `mintyPT/marky`
+- Workflow filename: `publish.yml`
+- Allowed action: `npm publish`
+
+The publish job publishes with provenance:
+
+```bash
+npm publish --access public --provenance
+```
+
+Before the workflow can publish, the npm package owner must authorize it as a trusted publisher:
+
+```bash
+npm install -g npm@latest
+npm trust github @maurogoncalo/marky \
+  --repo mintyPT/marky \
+  --file publish.yml \
+  --allow-publish \
+  --yes
+```

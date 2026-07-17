@@ -1,7 +1,7 @@
 {
-  "name": "marky",
+  "name": "@maurogoncalo/marky",
   "version": "0.1.0",
-  "description": "A TypeScript CLI and library package.",
+  "description": "Render Markdown documents to PDF from TypeScript or the command line.",
   "type": "module",
   "license": "MIT",
   "author": "mintyPT",
@@ -17,7 +17,7 @@
     "node": ">=20"
   },
   "bin": {
-    "marky": "./dist/cli/index.js"
+    "marky": "dist/cli/index.js"
   },
   "types": "./dist/index.d.ts",
   "exports": {

@@ -770,3 +770,45 @@ Render the professional example to a real PDF with the existing integration test
 - created · 2026-07-17T13:24:10Z · mauro.goncalo@gmail.com
 - Backlog → Claimed · 2026-07-17T13:46:36Z · mauro.goncalo@gmail.com
 - Claimed → Done · 2026-07-17T13:47:42Z · mauro.goncalo@gmail.com
+
+---
+
+## MARKY-025 · Publish Marky to npm with ClickClick release flow
+type: Task | status: Done | priority: High
+blocks: [] | blocked_by: []
+paths: package.json, .github/workflows/publish.yml, .github/workflows/ci.yml, README.md, RELEASE.md
+
+## What & why
+
+Prepare Marky for npm publication by matching the release flow used by the sibling ClickClick package. Marky already has package metadata, build scripts, package verification, CI, and a manual publish workflow, but the current flow is weaker than ClickClick's: it does not create/push a release commit and tag, it skips publishing when the committed version already exists instead of advancing to the next unused patch version, and it lacks the operator-facing release checklist and trusted-publisher documentation.
+
+Also resolve the package-name issue before publishing. The current package name, `marky`, is already taken on npm by another project (`marky@1.3.0`, repository `github.com/nolanlawson/marky`). The scoped package `@maurogoncalo/marky` was not present on the registry when checked. Unless the owner has access to the unscoped package, this work should rename Marky's npm package to `@maurogoncalo/marky` and update import/install documentation accordingly.
+
+## Where
+
+Package metadata and release scripts, GitHub Actions CI/publish workflows, README package/release documentation, and a new release checklist document. Use `/home/admin/www/clickclick` as the reference implementation, especially its manual npm publish workflow and release documentation.
+
+## How
+
+Mirror ClickClick's npm publishing setup for Marky:
+
+- Update Marky's package metadata for the chosen npm package name, most likely `@maurogoncalo/marky`, while preserving the `marky` CLI binary.
+- Keep public npm access and provenance-enabled publishing.
+- Update the manual `Publish to npm` GitHub Actions workflow so it checks out full history, uses write permissions for release commits/tags, installs dependencies and Playwright as needed for Marky's release checks, prepares the next unused patch version when the committed version already exists on npm or has a git tag, runs `npm run release:check`, commits `package.json`/`package-lock.json` version changes when needed, tags the release, publishes with `npm publish --access public --provenance`, and pushes the release commit/tag.
+- Keep routine CI non-publishing; it should continue to validate supported Node versions and verify package contents.
+- Add Marky-specific release documentation equivalent to ClickClick's `RELEASE.md` and README package-release/trusted-publishing notes, including the npm trusted publisher setup for repository `mintyPT/marky`, workflow file `publish.yml`, and allowed action `npm publish`.
+- Update install, `npx`, and library import examples in the README to use the final npm package name while keeping CLI usage as `marky`.
+
+## Acceptance criteria
+
+- [ ] The chosen npm package name is explicit and viable; if scoped, `package.json`, lockfile metadata, README install/import examples, and workflow confirmation prompts all use `@maurogoncalo/marky`.
+- [ ] The publish workflow matches ClickClick's manual trusted-publishing flow: full checkout, npm latest, release version preparation, release check, release commit/tag, `npm publish --access public --provenance`, and pushing tags/commit.
+- [ ] Routine CI remains separate from publishing and continues to run typecheck, build, tests, and package verification on supported Node versions.
+- [ ] A Marky `RELEASE.md` documents local verification, trusted publisher setup, workflow dispatch confirmation, and what the workflow does.
+- [ ] README package-release documentation explains the package metadata, local `release:check`, manual-only publishing, trusted publisher requirements, and final install/import commands.
+- [ ] `npm run release:check` passes locally after the metadata and documentation changes.
+
+### History
+- created · 2026-07-17T13:54:12Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T14:05:41Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T14:10:09Z · mauro.goncalo@gmail.com
