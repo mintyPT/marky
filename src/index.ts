@@ -19,6 +19,10 @@ export interface RenderMarkdownToPdfOptions {
   theme?: string;
   css?: string[];
   pdf?: Partial<PdfOptions>;
+  cover?: ProfessionalCoverInput;
+  toc?: ProfessionalTocInput;
+  pagination?: ProfessionalPaginationInput;
+  backPage?: ProfessionalBackPageInput;
   network?: NetworkPolicy;
   waitUntil?: PageReadyState;
   waitForFonts?: boolean;
@@ -203,6 +207,37 @@ export interface RenderedMarkdownDocument {
 export type RawHtmlMode = "sanitize" | "escape" | "allow";
 export type NetworkPolicy = "allow" | "block";
 export type PageReadyState = "load" | "domcontentloaded" | "networkidle";
+export type ProfessionalFeatureInput<Options extends object> = boolean | Options;
+
+export interface ProfessionalCoverOptions {
+  title?: string;
+  subtitle?: string;
+  author?: string;
+  date?: string;
+  logo?: string;
+}
+
+export interface ProfessionalTocOptions {
+  title?: string;
+  depth?: number;
+}
+
+export interface ProfessionalPaginationOptions {
+  title?: string;
+}
+
+export interface ProfessionalBackPageOptions {
+  title?: string;
+  text?: string;
+  website?: string;
+  email?: string;
+  logo?: string;
+}
+
+export type ProfessionalCoverInput = ProfessionalFeatureInput<ProfessionalCoverOptions>;
+export type ProfessionalTocInput = ProfessionalFeatureInput<ProfessionalTocOptions>;
+export type ProfessionalPaginationInput = ProfessionalFeatureInput<ProfessionalPaginationOptions>;
+export type ProfessionalBackPageInput = ProfessionalFeatureInput<ProfessionalBackPageOptions>;
 
 export interface PdfMargin {
   top?: string;
@@ -226,6 +261,10 @@ export interface RenderOptionsInput {
   theme?: string;
   css?: string[];
   pdf?: Partial<PdfOptions>;
+  cover?: ProfessionalCoverInput;
+  toc?: ProfessionalTocInput;
+  pagination?: ProfessionalPaginationInput;
+  backPage?: ProfessionalBackPageInput;
   network?: NetworkPolicy;
   waitUntil?: PageReadyState;
   waitForFonts?: boolean;
@@ -248,6 +287,10 @@ export interface ResolvedRenderOptions {
   theme: string;
   css: string[];
   pdf: PdfOptions;
+  cover?: ProfessionalCoverInput;
+  toc?: ProfessionalTocInput;
+  pagination?: ProfessionalPaginationInput;
+  backPage?: ProfessionalBackPageInput;
   network: NetworkPolicy;
   waitUntil: PageReadyState;
   waitForFonts: boolean;
@@ -453,6 +496,10 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
       scale: merged.pdf?.scale ?? defaultRenderOptions.pdf.scale,
       printBackground: merged.pdf?.printBackground ?? defaultRenderOptions.pdf.printBackground,
     },
+    cover: merged.cover,
+    toc: merged.toc,
+    pagination: merged.pagination,
+    backPage: merged.backPage,
     network: merged.network ?? defaultRenderOptions.network,
     waitUntil: merged.waitUntil ?? defaultRenderOptions.waitUntil,
     waitForFonts: merged.waitForFonts ?? defaultRenderOptions.waitForFonts,
@@ -543,6 +590,10 @@ function frontmatterToRenderOptions(frontmatter: Record<string, unknown>): Rende
     theme: readString(frontmatter.theme),
     css: readStringArray(frontmatter.css),
     pdf: readPdfOptions(frontmatter.pdf),
+    cover: readProfessionalCoverInput(frontmatter.cover),
+    toc: readProfessionalTocInput(frontmatter.toc),
+    pagination: readProfessionalPaginationInput(frontmatter.pagination),
+    backPage: readProfessionalBackPageInput(frontmatter.backPage),
     network: readEnum(frontmatter.network, ["allow", "block"]),
     waitUntil: readEnum(frontmatter.waitUntil, ["load", "domcontentloaded", "networkidle"]),
     waitForFonts: readBoolean(frontmatter.waitForFonts),
@@ -614,6 +665,54 @@ function readPdfMargin(value: unknown): PdfMargin | undefined {
     bottom: readString(margin.bottom),
     left: readString(margin.left),
   };
+}
+
+function readProfessionalCoverInput(value: unknown): ProfessionalCoverInput | undefined {
+  return readProfessionalFeatureInput(value, (input) => ({
+    title: readString(input.title),
+    subtitle: readString(input.subtitle),
+    author: readString(input.author),
+    date: readString(input.date),
+    logo: readString(input.logo),
+  }));
+}
+
+function readProfessionalTocInput(value: unknown): ProfessionalTocInput | undefined {
+  return readProfessionalFeatureInput(value, (input) => ({
+    title: readString(input.title),
+    depth: readNumber(input.depth),
+  }));
+}
+
+function readProfessionalPaginationInput(value: unknown): ProfessionalPaginationInput | undefined {
+  return readProfessionalFeatureInput(value, (input) => ({
+    title: readString(input.title),
+  }));
+}
+
+function readProfessionalBackPageInput(value: unknown): ProfessionalBackPageInput | undefined {
+  return readProfessionalFeatureInput(value, (input) => ({
+    title: readString(input.title),
+    text: readString(input.text),
+    website: readString(input.website),
+    email: readString(input.email),
+    logo: readString(input.logo),
+  }));
+}
+
+function readProfessionalFeatureInput<Options extends Record<string, unknown>>(
+  value: unknown,
+  readOptions: (input: Record<string, unknown>) => Options,
+): boolean | Options | undefined {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return omitUndefined(readOptions(value as Record<string, unknown>));
 }
 
 function omitUndefined<Value extends Record<string, unknown>>(value: Value): Value {

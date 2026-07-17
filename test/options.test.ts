@@ -93,4 +93,47 @@ describe("resolveRenderOptions", () => {
     expect(options.waitUntil).toBe("networkidle");
     expect(options.waitForFonts).toBe(false);
   });
+
+  it("accepts professional feature inputs from public options and frontmatter", () => {
+    const options = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      config: {
+        cover: true,
+        toc: { title: "Config contents", depth: 3 },
+        pagination: false,
+        backPage: { title: "Config back", logo: "./config-logo.svg" },
+      },
+      frontmatter: {
+        cover: {
+          title: "Frontmatter title",
+          subtitle: "Frontmatter subtitle",
+          unknown: "ignored",
+        },
+        toc: false,
+        pagination: { title: "Frontmatter pages" },
+        backPage: true,
+      },
+      explicit: {
+        cover: false,
+        backPage: {
+          title: "Explicit back",
+          text: "Thanks for reading.",
+          website: "https://example.com",
+          email: "hello@example.com",
+          logo: "./explicit-logo.svg",
+        },
+      },
+    });
+
+    expect(options.cover).toBe(false);
+    expect(options.toc).toBe(false);
+    expect(options.pagination).toEqual({ title: "Frontmatter pages" });
+    expect(options.backPage).toEqual({
+      title: "Explicit back",
+      text: "Thanks for reading.",
+      website: "https://example.com",
+      email: "hello@example.com",
+      logo: "./explicit-logo.svg",
+    });
+  });
 });
