@@ -202,6 +202,13 @@ export interface RenderedMarkdownDocument {
   title?: string;
   author?: string;
   metadata: Record<string, unknown>;
+  headings: MarkdownHeading[];
+}
+
+export interface MarkdownHeading {
+  text: string;
+  depth: number;
+  id?: string;
 }
 
 export type RawHtmlMode = "sanitize" | "escape" | "allow";
@@ -806,7 +813,8 @@ export async function renderMarkdownDocument(
 ): Promise<RenderedMarkdownDocument> {
   const parsed = matter(markdown);
   const rawHtml = options.rawHtml ?? "sanitize";
-  const file = await buildMarkdownProcessor(rawHtml).process(prepareMarkdownContent(parsed.content, rawHtml));
+  const headings: MarkdownHeading[] = [];
+  const file = await buildMarkdownProcessor(rawHtml, headings).process(prepareMarkdownContent(parsed.content, rawHtml));
   const { title, author, metadata } = normalizeFrontmatter(parsed.data);
 
   return {
@@ -814,14 +822,15 @@ export async function renderMarkdownDocument(
     title,
     author,
     metadata,
+    headings,
   };
 }
 
-function buildMarkdownProcessor(rawHtml: RawHtmlMode) {
+function buildMarkdownProcessor(rawHtml: RawHtmlMode, headings: MarkdownHeading[]) {
   const processor = unified().use(remarkParse).use(remarkGfm);
 
   if (rawHtml === "escape") {
-    return processor.use(remarkRehype).use(rehypeStringify);
+    return processor.use(remarkRehype).use(collectHeadingMetadata(headings)).use(rehypeStringify);
   }
 
   processor.use(remarkRehype, { allowDangerousHtml: true }).use(rehypeRaw);
@@ -830,7 +839,61 @@ function buildMarkdownProcessor(rawHtml: RawHtmlMode) {
     processor.use(rehypeSanitize);
   }
 
-  return processor.use(rehypeStringify);
+  return processor.use(collectHeadingMetadata(headings)).use(rehypeStringify);
+}
+
+function collectHeadingMetadata(headings: MarkdownHeading[]) {
+  return () => (tree: unknown) => {
+    visitTree(tree, (node) => {
+      if (node.type !== "element" || typeof node.tagName !== "string") {
+        return;
+      }
+
+      const match = /^h([1-6])$/.exec(node.tagName);
+      if (!match) {
+        return;
+      }
+
+      const text = textContent(node).trim().replace(/\s+/g, " ");
+      if (!text) {
+        return;
+      }
+
+      headings.push({
+        text,
+        depth: Number(match[1]),
+        id: typeof node.properties?.id === "string" ? node.properties.id : undefined,
+      });
+    });
+  };
+}
+
+interface HastNode {
+  type?: string;
+  tagName?: string;
+  value?: unknown;
+  properties?: Record<string, unknown>;
+  children?: HastNode[];
+}
+
+function visitTree(tree: unknown, visitor: (node: HastNode) => void): void {
+  if (!tree || typeof tree !== "object") {
+    return;
+  }
+
+  const node = tree as HastNode;
+  visitor(node);
+  for (const child of node.children ?? []) {
+    visitTree(child, visitor);
+  }
+}
+
+function textContent(node: HastNode): string {
+  if (node.type === "text" && typeof node.value === "string") {
+    return node.value;
+  }
+
+  return (node.children ?? []).map((child) => textContent(child)).join("");
 }
 
 function prepareMarkdownContent(markdown: string, rawHtml: RawHtmlMode): string {

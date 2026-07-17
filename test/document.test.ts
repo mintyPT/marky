@@ -45,6 +45,22 @@ draft: true
     expect(document.html).not.toContain("Quarterly Notes");
   });
 
+  it("exposes authored Markdown heading metadata", async () => {
+    const document = await renderMarkdownDocument(`
+# Report
+
+## Findings
+
+### Next steps
+`);
+
+    expect(document.headings).toEqual([
+      { text: "Report", depth: 1, id: undefined },
+      { text: "Findings", depth: 2, id: undefined },
+      { text: "Next steps", depth: 3, id: undefined },
+    ]);
+  });
+
   it("sanitizes raw HTML by default", async () => {
     const document = await renderMarkdownDocument("<section><strong>Safe</strong><script>alert('x')</script></section>");
 
@@ -116,6 +132,7 @@ title: Professional
     expect(html).toContain("&quot;cover&quot;:true");
     expect(html).toContain("&quot;toc&quot;:false");
     expect(html).toContain("<h1>Body</h1>");
+    expect(document.headings).toEqual([{ text: "Body", depth: 1, id: undefined }]);
   });
 
   it("resolves relative assets from an explicit base URL", async () => {

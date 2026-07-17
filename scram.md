@@ -424,7 +424,7 @@ Render a generated cover page when the cover feature is enabled. Support structu
 ---
 
 ## MARKY-014 · Extract heading metadata for professional document structure
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-015, MARKY-016] | blocked_by: [MARKY-009]
 tags: [professional-pdf-theme]
 
@@ -449,6 +449,8 @@ Collect headings from the main Markdown content during document rendering. Inclu
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:33:46Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:34:57Z · mauro.goncalo@gmail.com
 
 ---
 
