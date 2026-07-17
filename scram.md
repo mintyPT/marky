@@ -394,7 +394,7 @@ Keep the current default shell unchanged. Route theme: professional through a ne
 ---
 
 ## MARKY-013 · Render a structured professional cover page
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-020, MARKY-021, MARKY-023] | blocked_by: [MARKY-010, MARKY-012]
 tags: [professional-pdf-theme]
 
@@ -420,6 +420,8 @@ Render a generated cover page when the cover feature is enabled. Support structu
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:35:09Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:36:39Z · mauro.goncalo@gmail.com
 
 ---
 

@@ -135,6 +135,68 @@ title: Professional
     expect(document.headings).toEqual([{ text: "Body", depth: 1, id: undefined }]);
   });
 
+  it("renders a professional cover before the body when enabled", async () => {
+    const document = await renderMarkdownDocument(`# Body Title
+
+Content
+`);
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: {
+        title: "Cover Title",
+        subtitle: "Executive report",
+        author: "Ada",
+        date: "2026-07-17",
+        logo: "file:///project/logo.svg",
+      },
+      toc: false,
+      pagination: false,
+      backPage: false,
+    });
+
+    expect(html.indexOf('<section class="marky-professional-cover"')).toBeLessThan(
+      html.indexOf('<main class="marky-professional-document"'),
+    );
+    expect(html).toContain("Cover Title");
+    expect(html).toContain("Executive report");
+    expect(html).toContain("Ada · 2026-07-17");
+    expect(html).toContain('src="file:///project/logo.svg"');
+    expect(html).toContain("<h1>Body Title</h1>");
+  });
+
+  it("uses document title then first H1 as professional cover fallbacks", async () => {
+    const titledDocument = await renderMarkdownDocument(`---
+title: Metadata Title
+---
+
+# Body Title
+`);
+    const headingDocument = await renderMarkdownDocument("# Heading Title\n");
+
+    expect(renderHtmlShell(titledDocument, { css: [], theme: "professional", cover: {}, toc: false, pagination: false, backPage: false })).toContain(
+      "Metadata Title",
+    );
+    expect(renderHtmlShell(headingDocument, { css: [], theme: "professional", cover: {}, toc: false, pagination: false, backPage: false })).toContain(
+      "Heading Title",
+    );
+  });
+
+  it("omits the professional cover when disabled", async () => {
+    const document = await renderMarkdownDocument("# Body\n");
+    const html = renderHtmlShell(document, {
+      css: [],
+      theme: "professional",
+      cover: false,
+      toc: false,
+      pagination: false,
+      backPage: false,
+    });
+
+    expect(html).not.toContain('<section class="marky-professional-cover"');
+    expect(html).toContain("<h1>Body</h1>");
+  });
+
   it("resolves relative assets from an explicit base URL", async () => {
     const document = await renderMarkdownDocument("[Guide](./guide/index.html)\n\n![Logo](./assets/logo.svg)", {
       baseUrl: "examples/project-build/input/docs",

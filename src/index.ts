@@ -1116,6 +1116,7 @@ function renderProfessionalHtmlShell(
     pagination: options.pagination !== false,
     backPage: options.backPage !== false,
   });
+  const cover = options.cover === false ? "" : renderProfessionalCover(document, options.cover);
 
   return `<!doctype html>
 <html lang="en">
@@ -1143,6 +1144,43 @@ ${stylesheets}
       padding: 48px;
     }
 
+    .marky-professional-cover {
+      break-after: page;
+      min-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .marky-professional-cover__logo {
+      max-width: 180px;
+      max-height: 90px;
+      object-fit: contain;
+      margin-bottom: 32px;
+    }
+
+    .marky-professional-cover__title {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.08;
+      color: #111827;
+    }
+
+    .marky-professional-cover__subtitle {
+      margin: 0;
+      max-width: 620px;
+      font-size: 20px;
+      color: #4b5563;
+    }
+
+    .marky-professional-cover__meta {
+      margin-top: 40px;
+      color: #374151;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
     @page {
       margin: 18mm;
     }
@@ -1156,9 +1194,28 @@ ${stylesheets}
   </style>
 </head>
 <body data-marky-professional-features="${escapeHtml(featureState)}">
+  ${cover}
   <main class="marky-professional-document">${document.html}</main>
 </body>
 </html>`;
+}
+
+function renderProfessionalCover(document: RenderedMarkdownDocument, cover: ProfessionalCoverOptions): string {
+  const title = cover.title ?? document.title ?? document.headings.find((heading) => heading.depth === 1)?.text ?? "Untitled";
+  const subtitle = cover.subtitle ? `<p class="marky-professional-cover__subtitle">${escapeHtml(cover.subtitle)}</p>` : "";
+  const author = cover.author ?? document.author;
+  const date = cover.date;
+  const meta = [author, date].filter(Boolean).map((value) => escapeHtml(value!)).join(" · ");
+  const logo = cover.logo
+    ? `<img class="marky-professional-cover__logo" src="${escapeHtml(cover.logo)}" alt="">`
+    : "";
+
+  return `<section class="marky-professional-cover" aria-label="Cover">
+    ${logo}
+    <h1 class="marky-professional-cover__title">${escapeHtml(title)}</h1>
+    ${subtitle}
+    ${meta ? `<div class="marky-professional-cover__meta">${meta}</div>` : ""}
+  </section>`;
 }
 
 function escapeHtml(value: string): string {
