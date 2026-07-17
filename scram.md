@@ -644,7 +644,7 @@ Document theme: professional for CLI, config, frontmatter, and API usage. Includ
 ---
 
 ## MARKY-021 · Add a focused professional PDF example
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-024] | blocked_by: [MARKY-013, MARKY-016, MARKY-017, MARKY-018, MARKY-019]
 tags: [professional-pdf-theme]
 
@@ -670,6 +670,8 @@ Add a focused professional example showing theme: professional with cover, TOC, 
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:43:53Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:44:27Z · mauro.goncalo@gmail.com
 
 ---
 
