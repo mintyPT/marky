@@ -136,4 +136,45 @@ describe("resolveRenderOptions", () => {
       logo: "./explicit-logo.svg",
     });
   });
+
+  it("normalizes professional theme feature defaults and disable semantics", () => {
+    const options = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      config: {
+        theme: "professional",
+      },
+      frontmatter: {
+        toc: false,
+      },
+      explicit: {
+        backPage: { title: "The end" },
+      },
+    });
+
+    expect(options.theme).toBe("professional");
+    expect(options.cover).toEqual({});
+    expect(options.toc).toBe(false);
+    expect(options.pagination).toEqual({});
+    expect(options.backPage).toEqual({ title: "The end" });
+  });
+
+  it("keeps non-professional feature defaults disabled unless configured", () => {
+    const defaultOptions = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+    });
+    const unknownThemeOptions = resolveRenderOptions({
+      inputPath: "/project/docs/report.md",
+      explicit: {
+        theme: "custom",
+        cover: true,
+      },
+    });
+
+    expect(defaultOptions.cover).toBe(false);
+    expect(defaultOptions.toc).toBe(false);
+    expect(defaultOptions.pagination).toBe(false);
+    expect(defaultOptions.backPage).toBe(false);
+    expect(unknownThemeOptions.cover).toEqual({});
+    expect(unknownThemeOptions.toc).toBe(false);
+  });
 });

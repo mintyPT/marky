@@ -300,7 +300,7 @@ Introduce typed option shapes for cover, TOC, pagination, and back page. Each fe
 ---
 
 ## MARKY-010 · Normalize professional PDF feature defaults
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-012, MARKY-013, MARKY-018, MARKY-022] | blocked_by: [MARKY-009]
 tags: [professional-pdf-theme]
 
@@ -325,6 +325,8 @@ Resolve input precedence using the existing order: explicit options over frontma
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:27:42Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:29:00Z · mauro.goncalo@gmail.com
 
 ---
 

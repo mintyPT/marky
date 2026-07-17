@@ -238,6 +238,7 @@ export type ProfessionalCoverInput = ProfessionalFeatureInput<ProfessionalCoverO
 export type ProfessionalTocInput = ProfessionalFeatureInput<ProfessionalTocOptions>;
 export type ProfessionalPaginationInput = ProfessionalFeatureInput<ProfessionalPaginationOptions>;
 export type ProfessionalBackPageInput = ProfessionalFeatureInput<ProfessionalBackPageOptions>;
+export type ResolvedProfessionalFeature<Options extends object> = false | Options;
 
 export interface PdfMargin {
   top?: string;
@@ -287,10 +288,10 @@ export interface ResolvedRenderOptions {
   theme: string;
   css: string[];
   pdf: PdfOptions;
-  cover?: ProfessionalCoverInput;
-  toc?: ProfessionalTocInput;
-  pagination?: ProfessionalPaginationInput;
-  backPage?: ProfessionalBackPageInput;
+  cover: ResolvedProfessionalFeature<ProfessionalCoverOptions>;
+  toc: ResolvedProfessionalFeature<ProfessionalTocOptions>;
+  pagination: ResolvedProfessionalFeature<ProfessionalPaginationOptions>;
+  backPage: ResolvedProfessionalFeature<ProfessionalBackPageOptions>;
   network: NetworkPolicy;
   waitUntil: PageReadyState;
   waitForFonts: boolean;
@@ -313,6 +314,10 @@ const defaultRenderOptions: Omit<ResolvedRenderOptions, "inputPath" | "outputPat
     scale: 1,
     printBackground: true,
   },
+  cover: false,
+  toc: false,
+  pagination: false,
+  backPage: false,
   network: "allow",
   waitUntil: "load",
   waitForFonts: true,
@@ -477,13 +482,15 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
   const frontmatter = frontmatterToRenderOptions(input.frontmatter ?? {});
   const merged = mergeRenderOptions(input.config, frontmatter, input.explicit);
   const outputPath = resolveOutputPath(input, frontmatter);
+  const theme = merged.theme ?? defaultRenderOptions.theme;
+  const professionalDefaultsEnabled = theme === "professional";
 
   return {
     inputPath,
     outputPath,
     force: merged.force ?? defaultRenderOptions.force,
     rawHtml: merged.rawHtml ?? defaultRenderOptions.rawHtml,
-    theme: merged.theme ?? defaultRenderOptions.theme,
+    theme,
     css: [
       ...resolvePaths(input.config?.css ?? [], dirname(resolve(input.configPath ?? inputPath))),
       ...resolvePaths(frontmatter.css ?? [], dirname(inputPath)),
@@ -496,15 +503,34 @@ export function resolveRenderOptions(input: ResolveRenderOptionsInput): Resolved
       scale: merged.pdf?.scale ?? defaultRenderOptions.pdf.scale,
       printBackground: merged.pdf?.printBackground ?? defaultRenderOptions.pdf.printBackground,
     },
-    cover: merged.cover,
-    toc: merged.toc,
-    pagination: merged.pagination,
-    backPage: merged.backPage,
+    cover: normalizeProfessionalFeature(merged.cover, professionalDefaultsEnabled),
+    toc: normalizeProfessionalFeature(merged.toc, professionalDefaultsEnabled),
+    pagination: normalizeProfessionalFeature(merged.pagination, professionalDefaultsEnabled),
+    backPage: normalizeProfessionalFeature(merged.backPage, professionalDefaultsEnabled),
     network: merged.network ?? defaultRenderOptions.network,
     waitUntil: merged.waitUntil ?? defaultRenderOptions.waitUntil,
     waitForFonts: merged.waitForFonts ?? defaultRenderOptions.waitForFonts,
     timeoutMs: merged.timeoutMs ?? defaultRenderOptions.timeoutMs,
   };
+}
+
+function normalizeProfessionalFeature<Options extends object>(
+  input: ProfessionalFeatureInput<Options> | undefined,
+  enabledByDefault: boolean,
+): ResolvedProfessionalFeature<Options> {
+  if (input === false) {
+    return false;
+  }
+
+  if (input === true) {
+    return {} as Options;
+  }
+
+  if (input !== undefined) {
+    return input;
+  }
+
+  return enabledByDefault ? ({} as Options) : false;
 }
 
 function resolveOutputPath(input: ResolveRenderOptionsInput, frontmatter: RenderOptionsInput): string {
