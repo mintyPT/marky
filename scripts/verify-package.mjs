@@ -8,7 +8,13 @@ if (!packJsonPath) {
   fail("Usage: node scripts/verify-package.mjs <npm-pack-json>");
 }
 
-const [packResult] = JSON.parse(readFileSync(packJsonPath, "utf8"));
+const packJson = JSON.parse(readFileSync(packJsonPath, "utf8"));
+const packResult = Array.isArray(packJson) ? packJson[0] : packJson[packageJson.name];
+
+if (!packResult) {
+  fail(`Package dry-run did not include ${packageJson.name}.`);
+}
+
 const files = new Set(packResult.files.map((file) => file.path));
 const binEntries = Object.values(packageJson.bin ?? {}).map((value) => value.replace(/^\.\//, ""));
 
