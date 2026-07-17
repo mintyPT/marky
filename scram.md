@@ -551,7 +551,7 @@ Render a final page when backPage is enabled. Support structured plain-text fiel
 ---
 
 ## MARKY-018 · Add Playwright pagination footer support
-type: Task | status: Backlog | priority: Medium
+type: Task | status: Done | priority: Medium
 blocks: [MARKY-020, MARKY-021, MARKY-024] | blocked_by: [MARKY-010]
 tags: [professional-pdf-theme]
 
@@ -577,6 +577,8 @@ When pagination is enabled, call Playwright PDF generation with displayHeaderFoo
 
 ### History
 - created · 2026-07-17T13:24:09Z · mauro.goncalo@gmail.com
+- Backlog → Claimed · 2026-07-17T13:40:31Z · mauro.goncalo@gmail.com
+- Claimed → Done · 2026-07-17T13:41:42Z · mauro.goncalo@gmail.com
 
 ---
 

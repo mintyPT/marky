@@ -455,16 +455,42 @@ async function renderMarkdownToPdfWithBrowser(
       await page.evaluate("document.fonts.ready");
     }
     await page.pdf({
-      format: resolvedOptions.pdf.format,
-      margin: resolvedOptions.pdf.margin,
-      landscape: resolvedOptions.pdf.landscape,
-      scale: resolvedOptions.pdf.scale,
+      ...playwrightPdfOptions(document, resolvedOptions),
       path: resolvedOptions.outputPath,
-      printBackground: resolvedOptions.pdf.printBackground,
     });
   } finally {
     await page.close();
   }
+}
+
+function playwrightPdfOptions(document: RenderedMarkdownDocument, resolvedOptions: ResolvedRenderOptions) {
+  const options = {
+    format: resolvedOptions.pdf.format,
+    margin: resolvedOptions.pdf.margin,
+    landscape: resolvedOptions.pdf.landscape,
+    scale: resolvedOptions.pdf.scale,
+    printBackground: resolvedOptions.pdf.printBackground,
+  };
+
+  if (resolvedOptions.pagination === false) {
+    return options;
+  }
+
+  const title =
+    resolvedOptions.pagination.title ??
+    document.title ??
+    document.headings.find((heading) => heading.depth === 1)?.text ??
+    "Marky document";
+
+  return {
+    ...options,
+    displayHeaderFooter: true,
+    headerTemplate: "<div></div>",
+    footerTemplate: `<div style="box-sizing: border-box; width: 100%; padding: 0 18mm; font-size: 9px; color: #6b7280; font-family: Arial, sans-serif; display: flex; justify-content: space-between;">
+      <span>${escapeHtml(title)}</span>
+      <span><span class="pageNumber"></span></span>
+    </div>`,
+  };
 }
 
 export function normalizeRenderError(error: unknown): MarkyRenderError {
